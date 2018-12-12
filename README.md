@@ -20,10 +20,9 @@ These simple steps will run **Perf-UI** container for test which described in **
 
 For example:
 ```
-    docker run -t -v <your_local_path_to_reports>:/tmp/reports getcarrier/perf-ui \
-    -n 1 \
-    -t ExampleTest.yaml \
-    -e example 
+    docker run -t -v <your_local_path_to_reports>:/tmp/reports \
+    --rm --name perfui \
+    getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e example 
 ```
 
 Results you can find at:
