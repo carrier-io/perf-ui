@@ -76,18 +76,23 @@ example:                                    # Name of environment or scenario of
        css: div#Masterwrap
 ```
 
-**By default**, If you are not using Influxdb neither ReportPortal, you will receive screenshots for 
-each page from test and Lighthouse report for each test as html page at the _your_local_path_to_reports_.
+Neither of InfluxDB or ReportPortal are not required, but using them you will receive all the benefits from our tool.
 
-If you are using **InfluxDB** these fields are required:
+**By default**, If you are not using Influxdb or ReportPortal, you will receive Screenshot and Lighthouse report for each  
+page from test at the _your_local_path_to_reports_.
+
+#####If you are using **InfluxDB** these fields are required:
 
     - url
     - db_name
     
-User and password are required if you are using auth for InfluxDB
+User and password are required if you are using auth for InfluxDB.
+
+To see all advantages of using InfluxDB data storing, install **Grafana** on your Machine, connect it with you **InfluxDB** and use 
+Dashboard from _dashboards_ folder.  
 
 
-If you are using **ReportPortal** these fields are required:
+#####If you are using **ReportPortal** these fields are required:
 
     - url
     - token
