@@ -52,7 +52,7 @@ if (rp_conf && rp_conf['url'] && rp_conf['token'] && rp_conf['project']) {
     console.log(`Your config:\n ${rp_conf}`)
 }
 
-var ScenarioBuilder = new Scenario(env, test_name, influx_conf, rp)
+var ScenarioBuilder = new Scenario(test_name, influx_conf, rp)
 
 async function run() {
     for (var j = 0; j < times; j++) {

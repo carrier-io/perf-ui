@@ -35,12 +35,13 @@ RUN apt-get -qqy update \
 RUN wget -qO- https://deb.nodesource.com/setup_8.x | bash -
 RUN apt-get install -y nodejs default-jre
 
-RUN mkdir -p /tmp/reports/screenshots
-RUN mkdir /tmp/reports/lighthouse_pages
-RUN mkdir /tmp/tests
 ADD chrome64_67.0.3396.79.deb /tmp/chrome64_67.0.3396.79.deb
 RUN cd /tmp && dpkg -i chrome64_67.0.3396.79.deb || apt-get -y -f install
 RUN cd /tmp && dpkg -i chrome64_67.0.3396.79.deb
+
+RUN mkdir -p /tmp/reports/screenshots
+RUN mkdir /tmp/reports/lighthouse_pages
+RUN mkdir /tmp/tests
 
 COPY tests /tests
 ADD	supervisord.conf /etc/supervisor/conf.d/supervisord.conf
