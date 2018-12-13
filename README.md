@@ -2,7 +2,7 @@
 
 _Tool for UI Performance testing_
 
-###Quick and easy start
+### Quick and easy start
 
 These simple steps will run **Perf-UI** container for test which described in **ExampleTest.yaml**
 
@@ -29,7 +29,7 @@ Results you can find at:
 
     your_local_path_to_reports
     
-###Configuration
+### Configuration
 
 Test scenarios can be configured at `yourTestConfig.yaml` file following the description below:
 
@@ -78,10 +78,9 @@ example:                                    # Name of environment or scenario of
 
 Neither of InfluxDB or ReportPortal are not required, but using them you will receive all the benefits from our tool.
 
-**By default**, If you are not using _Influxdb_ or _ReportPortal_, you will receive Screenshot and Lighthouse report for each  
-page from test at the _your_local_path_to_reports_.
+**By default**, If you are not using _Influxdb_ or _ReportPortal_, you will receive jUnit XML test report, Screenshot and Lighthouse report for each  page from test at the _your_local_path_to_reports_.
 
-#####If you are using **InfluxDB** these fields are required:
+##### If you are using **InfluxDB** these fields are required:
 
     - url
     - db_name
@@ -93,7 +92,7 @@ To see all advantages of using InfluxDB data storing, install **Grafana** on you
 After you connected Grafana and InfluxDB, instead of creating new dashboard, select _Import dashboard_ and use JSON dashboard file from _dashboards_ folder.
 
 
-#####If you are using **ReportPortal** these fields are required:
+##### If you are using **ReportPortal** these fields are required:
 
     - url
     - token

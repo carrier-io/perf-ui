@@ -23,16 +23,17 @@ var Lighthouse = require('./lighthouse')
 var Logger = require('./logger')
 const { format } = require('util')
 var utils = require('./utils')
+var JUnitBuilder = require('./junit_reporter')
 
-function ScenarioBuilder(env, test_name, influx_conf, rp) {
-    this.env = env
-    this.testName = test_name
+function ScenarioBuilder(test_name, influx_conf, rp) {
+    this.testName = test_name.replace(/\.y.?ml/g, '')
     if (influx_conf && influx_conf['url'] != null) {
-        this.logger = new Logger(influx_conf, test_name)
+        this.logger = new Logger(influx_conf, this.testName)
     }
     if (rp) {
         this.rp = rp
     }
+    this.junit = new JUnitBuilder(this.testName)
 
     this.lighthouse = new Lighthouse()
 }
@@ -86,6 +87,7 @@ ScenarioBuilder.prototype.testStep = function (driver, page_name, url, param, ch
             if (outer_this.rp) {
                 outer_this.rp.reportIssue(error, url, param, page_name, driver, lh_name)
             }
+            outer_this.junit.failCase(page_name, error)
             status = 'ko';
         }).then(() => {
             if (!outer_this.logger && !outer_this.rp && status != 'ko') {
@@ -93,6 +95,7 @@ ScenarioBuilder.prototype.testStep = function (driver, page_name, url, param, ch
             }
             if (status != 'ko') {
                 outer_this.lighthouse.startLighthouse(lh_name, lighthouse_opts, driver, this.testName);
+                outer_this.junit.successCase(page_name)
             }
             if (outer_this.logger) {
                 if (status != 'ko') {
@@ -155,11 +158,14 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
 
             await utils.sleep(3)
         }
+    } catch (e) {
+        outer_this.junit.errorCase(e)
     } finally {
         if (iteration == (times - 1)) {
             if (outer_this.rp) {
                 await outer_this.rp.finishTestLaunch()
             }
+            outer_this.junit.writeXml()
             utils.sleep(5)
             console.info("Congrats, test is done.")
         }
