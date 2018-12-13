@@ -78,7 +78,7 @@ example:                                    # Name of environment or scenario of
 
 Neither of InfluxDB or ReportPortal are not required, but using them you will receive all the benefits from our tool.
 
-**By default**, If you are not using Influxdb or ReportPortal, you will receive Screenshot and Lighthouse report for each  
+**By default**, If you are not using _Influxdb_ or _ReportPortal_, you will receive Screenshot and Lighthouse report for each  
 page from test at the _your_local_path_to_reports_.
 
 #####If you are using **InfluxDB** these fields are required:
@@ -88,8 +88,9 @@ page from test at the _your_local_path_to_reports_.
     
 User and password are required if you are using auth for InfluxDB.
 
-To see all advantages of using InfluxDB data storing, install **Grafana** on your Machine, connect it with you **InfluxDB** and use 
-Dashboard from _dashboards_ folder.  
+To see all advantages of using InfluxDB data storing, install **Grafana** on your instance and connect it with you **InfluxDB**.
+
+After you connected Grafana and InfluxDB, instead of creating new dashboard, select _Import dashboard_ and use JSON dashboard file from _dashboards_ folder.
 
 
 #####If you are using **ReportPortal** these fields are required:
