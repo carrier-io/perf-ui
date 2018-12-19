@@ -2,9 +2,10 @@
 
 _Tool for UI Performance testing_
 
-### Quick and easy start
+Quick and easy start
+--------------------
 
-These simple steps will run **Perf-UI** container for test which described in **ExampleTest.yaml**
+These simple steps will run **Perf-UI** container for test which described in **Configuration** part
 
 1. **Install Docker**
 
@@ -25,28 +26,51 @@ For example:
     getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e example 
 ```
 
-Results you can find at:
+Results of test example you can find at  `your_local_path_to_reports` as _Lighthouse_ html reports, _Screenshots_ of opened 
+and failed pages (if any) and _JUnit xml report_.
 
-    your_local_path_to_reports
     
-### Configuration
+Configuration
+-------------
 
-Test scenarios can be configured at `yourTestConfig.yaml` file following the description below:
+To receive all the benefits from Perf-UI you should use [InfluxDB](https://portal.influxdata.com/downloads) as data 
+storage for page timing API data and [Grafana](https://grafana.com/) for data visualization using our [dashboard](https://github.com/carrier-io/perf-ui/blob/master/dashboards/UI%20Performance-Dashboard.json). 
 
-To run you own scenario, configure it and mount `getcarrier/perf-ui` container as:
+Also you could use the [ReportPortal](http://reportportal.io/) as storage of _screenshots_, _lighthouse results_ and _error logs of failed pages_, as auto analyzer for failed pages.
 
-`-v <your_local_path_to_test>/yourTestConfig.yaml:/tmp/tests/yourTestConfig.yaml`
+However neither Report Portal or InfluxDB with Grafana are not required inside test config, without them you will receive 
+_Lighthouse_ html reports, _Screenshots_ of opened and failed pages (if any) and _JUnit xml report_ at `your_local_path_to_reports`.
 
-**yourTestConfig.yaml structure:**
+________________________
+
+Test scenarios can be configured as `yaml` (e.g. [ExampleTest.yaml](https://github.com/carrier-io/perf-ui/blob/master/ExampleTest.yaml)) 
+file following the config description below:
+
+**ExampleTest.yaml structure example:**
 
 ``` 
-# InfluxDB to work in pair with Grafana and show results on Grafana dashboard
+# InfluxDB config (not required)
+# Required fields:
+#  - url
+#  - db_name 
+# User and password are required If your InfluxDB using auth
+
+# InfluxDB config example:
 influxdb:                                   
    url: http://your_influx_url:port/        # Path to InfluxDB
    db_name: your_database                   # Database name
    user:                                    # User name, if you enabled auth in InfluxDB
    password:                                # User password for above user name
-# ReportPortal tool
+   
+   
+# ReportPortal tool config (not required)
+# Required fields:
+#  - url
+#  - token
+#  - project
+#  - launch_name
+
+# ReportPortal config example:
 reportportal:                               
    url: https://rp_url/api/v1               # ReportPortal API url
    token: your-rp-uuid-token                # Long-living auth token (UUID) for ReportPortal
@@ -55,8 +79,17 @@ reportportal:
    launch_tags:                             # Launch tags to filter existing launches and show them on RP dashboard
      - Google Test
      - www.google.com
+
+
 # Test Config
-example:                                    # Name of environment or scenario of your test
+# For test config is required: 
+#  - environment (e.g. staging);
+#  - page name (e.g. Google, Google Search)
+#  - url (e.g. https://www.google.com)
+# Check for each page is not required but desirable to use.
+
+# Test config example:
+staging:                                    # Name of environment or scenario of your test
    Google:                                  # Page Name
      url: https://www.google.com            # Page URL
    Google Search:
@@ -76,29 +109,17 @@ example:                                    # Name of environment or scenario of
        css: div#Masterwrap
 ```
 
-Neither of InfluxDB or ReportPortal are not required, but using them you will receive all the benefits from our tool.
+_______________________
 
-**By default**, If you are not using _Influxdb_ or _ReportPortal_, you will receive jUnit XML test report, Screenshot and Lighthouse report for each  page from test at the _your_local_path_to_reports_.
+To run your configured scenario, mount it to `getcarrier/perf-ui` container as:
 
-##### If you are using **InfluxDB** these fields are required:
+`-v <your_local_path_to_test>/ExampleTest.yaml:/tmp/tests/ExampleTest.yaml`
 
-    - url
-    - db_name
-    
-User and password are required if you are using auth for InfluxDB.
+When you configured your own test file run command should looks example below (where _ExampleTest.yaml and other parameters described above_ should be yours):
 
-To see all advantages of using InfluxDB data storing, install **Grafana** on your instance and connect it with you **InfluxDB**.
-
-After you connected Grafana and InfluxDB, instead of creating new dashboard, select _Import dashboard_ and use JSON dashboard file from _dashboards_ folder.
-
-
-##### If you are using **ReportPortal** these fields are required:
-
-    - url
-    - token
-    - project
-    - launch_name
-    
-For **Test Config** required page name (e.g. Google Search) and page url.
-
-**Checks** for pages are not required but desirable to use
+```
+    docker run -t -v <your_local_path_to_reports>:/tmp/reports \ 
+    -v <your_local_path_to_test>/ExampleTest.yaml:/tmp/tests/ExampleTest.yaml \
+    --rm --name perfui \
+    getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e example 
+```
