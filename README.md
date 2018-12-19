@@ -5,7 +5,7 @@ _Tool for UI Performance testing_
 Quick and easy start
 --------------------
 
-These simple steps will run **Perf-UI** container for test which described in **Configuration** part
+These simple steps will run **Perf-UI** container for test which described in [ExampleTest.yaml](https://github.com/carrier-io/perf-ui/blob/master/ExampleTest.yaml)
 
 1. **Install Docker**
 
