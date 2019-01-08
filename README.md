@@ -1,4 +1,6 @@
 # PERF-UI
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fcarrier-io%2Fperf-ui.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fcarrier-io%2Fperf-ui?ref=badge_shield)
+
 
 _Tool for UI Performance testing_
 
@@ -123,3 +125,7 @@ When you configured your own test file run command should looks example below (w
     --rm --name perfui \
     getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e example 
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fcarrier-io%2Fperf-ui.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fcarrier-io%2Fperf-ui?ref=badge_large)
