@@ -35,8 +35,8 @@ and failed pages (if any) and _JUnit xml report_.
 Configuration
 -------------
 
-To receive all the benefits from Perf-UI you should use [InfluxDB](https://portal.influxdata.com/downloads) as data 
-storage for page timing API data and [Grafana](https://grafana.com/) for data visualization using our [dashboard](https://github.com/carrier-io/perf-ui/blob/master/dashboards/UI%20Performance-Dashboard.json). 
+To receive all the benefits from Perf-UI you should use [InfluxDB](https://hub.docker.com/_/influxdb) container as data 
+storage for page timing API data and [Grafana](https://grafana.com/) for data visualization using our [dashboard](https://github.com/carrier-io/perf-ui/blob/master/dashboards/UI%20Performance-Dashboard.json).
 
 Also you could use the [ReportPortal](http://reportportal.io/) as storage of _screenshots_, _lighthouse results_ and _error logs of failed pages_, as auto analyzer for failed pages.
 
@@ -113,7 +113,11 @@ staging:                                    # Name of environment or scenario of
 
 _______________________
 
-To run your configured scenario, mount it to `getcarrier/perf-ui` container as:
+####InfluxDB configuration:
+
+For using InfluxDB, you should have accessible web link to it.
+
+####To run your configured scenario, mount it to `getcarrier/perf-ui` container as:
 
 `-v <your_local_path_to_test>/ExampleTest.yaml:/tmp/tests/ExampleTest.yaml`
 
