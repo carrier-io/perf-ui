@@ -86,7 +86,7 @@ reportportal:
 # Test Config
 # For test config is required: 
 #  - environment (e.g. staging);
-#  - page name (e.g. Google, Google Search)
+#  - page name (e.g. Google, Google_Search). Page names should not contain spaces.
 #  - url (e.g. https://www.google.com)
 # Check for each page is not required but desirable to use.
 
@@ -94,7 +94,7 @@ reportportal:
 staging:                                    # Name of environment or scenario of your test
    Google:                                  # Page Name
      url: https://www.google.com            # Page URL
-   Google Search:
+   Google_Search:
      url: https://www.google.com/search?q=  # Page url with parameters
      # URL parameters. Each parameter is for different page
      parameters:                            

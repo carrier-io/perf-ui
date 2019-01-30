@@ -53,6 +53,7 @@ const capabilities = {
 ScenarioBuilder.prototype.testStep = function (driver, page_name, url, param, check, waiter, iteration) {
     var status = 'ok';
     var outer_this = this;
+    var page_name = page_name.replace(/[^a-zA-Z0-9_]+/g, '_')
     var lh_name = `${page_name}_lh_${iteration}`
 
     console.log("Opening %s page (%d)", page_name, iteration)
