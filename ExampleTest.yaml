@@ -14,7 +14,7 @@
 example: # environment
   Google:
     url: https://www.google.com
-  Google Search:
+  Google_Search:
     url: https://www.google.com/search?q=
     parameters:
       - ui+performance
