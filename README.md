@@ -113,11 +113,21 @@ staging:                                    # Name of environment or scenario of
 
 _______________________
 
-####InfluxDB configuration:
+#### InfluxDB configuration cases:
 
-For using InfluxDB, you should have accessible web link to it.
+1. For using InfluxDB, ***you should have accessible web link to it***.
+2. If your InfluxDB and Perf-UI containers located on the same host and ***you do not have accessible web link to InfluxDB***, use link to InfluxDB container as described below:
+    - Change db_url at YourTest.yaml to `http://influx_db_link:<your_db_port>/`
+    - At perf-ui startup command, before `--name perfui` parameter add `--link <your_influxdb_name_or_id>:influx_db_link`
+    - Your run command should looks like:
+        ```
+            docker run -t -v <your_local_path_to_reports>:/tmp/reports \ 
+            -v <your_local_path_to_test>/ExampleTest.yaml:/tmp/tests/ExampleTest.yaml \
+            --rm --link <your_influxdb_name_or_id>:influx_db_link --name perfui \
+            getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e example 
+        ```
 
-####To run your configured scenario, mount it to `getcarrier/perf-ui` container as:
+#### To run your configured scenario, mount it to `getcarrier/perf-ui` container as:
 
 `-v <your_local_path_to_test>/ExampleTest.yaml:/tmp/tests/ExampleTest.yaml`
 
@@ -129,6 +139,13 @@ When you configured your own test file run command should looks example below (w
     --rm --name perfui \
     getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e example 
 ```
+
+____________________
+
+#### Minimal requirements
+
+1. Grafana version not higher then 5.3.4
+2. Minimum 2 GB RAM to start container without errors
 
 
 ## License
