@@ -149,7 +149,7 @@ ReportPortal.prototype.reportResult = function (page_name, url, path, driver, lh
             }
         })
         .then(() => outer_this.sendTestLogWithFile(step, outer_this.image_path, `${image_name}.png`, "image/png", `Screenshot: ${image_name}.png`))
-        .then(() => outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}.html`, "xml", `Lighthouse result: ${lh_name}.html`))
+        .then(() => outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}.html`, "text/xml", `Lighthouse result: ${lh_name}.html`))
         .finally(() => outer_this.finishItem(step.tempId, 'passed'))
 
 }
