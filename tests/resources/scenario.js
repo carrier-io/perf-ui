@@ -70,7 +70,7 @@ const capabilities = {
     }
 }
 
-ScenarioBuilder.prototype.testStep_v1 = function (driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, iteration, scenarioIter) {
+ScenarioBuilder.prototype.testStep_v1 = function (driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, iteration, scenarioIter, targetUrl) {
     var page_name = page_name.replace(/[^a-zA-Z0-9_]+/g, '_')
     var lh_name = `${page_name}_lh_${iteration}`
     var status = 'ok';
@@ -78,17 +78,17 @@ ScenarioBuilder.prototype.testStep_v1 = function (driver, page_name, baseUrl, pa
 
     console.log("Opening %s TestCase (%d)", page_name, iteration)
 
-    return driver.sleep(1).then(()=>outer_this.execList(driver, scenarioIter, baseUrl, pageCheck, stepList, waiter))
+    return driver.sleep(1).then(()=>outer_this.execList(driver, scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl))
                     .catch((error) => outer_this.errorHandler(driver, page_name, error, baseUrl, parameters, lh_name, status))
                     .then((status) => outer_this.analyseAndReportResult(driver, page_name, baseUrl, parameters, lh_name, status))
 }
 
-ScenarioBuilder.prototype.execList = function (driver,scenarioIter, baseUrl, pageCheck, stepList, waiter) {
+ScenarioBuilder.prototype.execList = function (driver,scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl) {
 
     var locator;
     var lastStep;
 
-    if (scenarioIter == 0 || baseUrl != null || baseUrl != undefined){
+    if (scenarioIter == 0 || targetUrl!=baseUrl){
         lastStep = driver.get(baseUrl)
     }
 
@@ -210,7 +210,6 @@ ScenarioBuilder.prototype.analyseAndReportResult = function (driver, page_name, 
 ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
 
     var outer_this = this;
-    var baseUrl
 
     var driver = new Builder().withCapabilities(capabilities)
         .setAlertBehavior('accept')
@@ -231,6 +230,8 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
 
     var waiter = new Waiter(driver)
     var scenarioIter = 0;
+    var baseUrl
+    var targetUrl
 
     try {
         console.log(`${test_name} test, iteration ${iteration}`)
@@ -243,7 +244,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
             var pageCheck
 
             if (page['url'] != null || page['url'] != undefined) {
-                var baseUrl = page['url']
+                baseUrl = page['url']
             }
             if (page['check'] != null || page['check']) {
                 pageCheck = page['check']
@@ -308,20 +309,21 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                     for (let parameter of parameters) {
                         pageUrlWithParameters = baseUrl + parameter
                         pageNameWithParameter = page_name + "_" + paramIterator
-                        await outer_this.testStep_v1(driver, pageNameWithParameter, pageUrlWithParameters, parameter, pageCheck, stepList, waiter, iteration, scenarioIter)
+                        await outer_this.testStep_v1(driver, pageNameWithParameter, pageUrlWithParameters, parameter, pageCheck, stepList, waiter, iteration, scenarioIter, targetUrl)
                         paramIterator += 1
                     }
 
                 } else {
                     var pageUrlWithParameters = baseUrl + parameters
-                    await outer_this.testStep_v1(driver, page_name, pageUrlWithParameters, parameters, pageCheck, stepList, waiter, iteration, scenarioIter)
+                    await outer_this.testStep_v1(driver, page_name, pageUrlWithParameters, parameters, pageCheck, stepList, waiter, iteration, scenarioIter, targetUrl)
                 }
             }
             else {
-                await outer_this.testStep_v1(driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, iteration, scenarioIter)
+                await outer_this.testStep_v1(driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, iteration, scenarioIter, targetUrl)
             }
             await utils.sleep(3)
             scenarioIter+= 1
+            targetUrl = baseUrl
         }
     } catch (error) {
         console.log(error)
