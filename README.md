@@ -17,7 +17,7 @@ These simple steps will run **Perf-UI** container for test which described in [E
 
     `t` - test file name
 
-    `e` - test environment or scenario from test file
+    `e` - test suite or scenario from test file
     
     `your_local_path_to_reports` - path on your local filesystem where you want to store reports from this execution
 
@@ -25,7 +25,7 @@ For example:
 ```
     docker run -t -v <your_local_path_to_reports>:/tmp/reports \
     --rm --name perfui \
-    getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e example 
+    getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e Demo 
 ```
 
 Results of test example you can find at  `your_local_path_to_reports` as _Lighthouse_ html reports, _Screenshots_ of opened 
@@ -85,30 +85,41 @@ reportportal:
 
 # Test Config
 # For test config is required: 
-#  - environment (e.g. staging);
-#  - page name (e.g. Google, Google_Search). Page names should not contain spaces.
-#  - url (e.g. https://www.google.com)
-# Check for each page is not required but desirable to use.
+#  - Test Suite name (e.g. Demo). Name should not contain spaces.
+#  - Test Case name (e.g. SearchWithParameters). Name should not contain spaces.
+#  - url (e.g.  https://www.etsy.com/ ) Required only for first Test Case. 
+#                                       Next Test Case will be executing with this parameter automatically.
+#                                       You have opportunity to use "Open URL Action" instead this block
 
-# Test config example:
-staging:                                    # Name of environment or scenario of your test
-   Google:                                  # Page Name
-     url: https://www.google.com            # Page URL
-   Google_Search:
-     url: https://www.google.com/search?q=  # Page url with parameters
-     # URL parameters. Each parameter is for different page
-     parameters:                            
-       - ui+performance                     # Google Search for UI Performance
-       - api+performance                    # Google Search for API Performance
-     # Check for page loading state
-     check:
-        # XPATH check for page state
-        xpath: //a[contains(text(), "performance")]
-   Yahoo:
-     url: https://www.yahoo.com
-     check:
-       # CSS check for page state
-       css: div#Masterwrap
+# Test Config Structure (example)
+Demo:                                         # Test Suite
+
+  SearchWithParameters:                         # Test Case
+
+    url: https://www.etsy.com/                      # Page URL (Starting URL) 
+    parameters:                                     # URL parameters. (Each parameter is for different page)
+      - search?q=shoes                               
+      - search?q=hats
+
+    steps:                                          # Test Case Step (List of action which needs to be executed. Each action is executed consequentially)
+
+      - url: https://www.etsy.com                       # Open URL Action (Navigate to a specified page.)
+
+      - input:                                        # Input Action (Entering data into specified field)
+          xpath: //input[@id='search-query']            # locator for WebElement (You can use "xpath" or "css" type of locators)
+          value: shirt                                  # data which you want to enter
+
+      - check:                                        # Check Action (check page state or WebElement state)
+          xpath: //button[@value='Search']              # locator for WebElement (You can use "xpath" or "css" type of locators)
+
+      - click:                                        # Click Action (Click specified WebElement)
+          xpath: //button[@value='Search']              # locator for WebElement (You can use "xpath" or "css" type of locators)
+
+      - switchToFrame:                                # Switch To Frame Action (Switch to specified frame) 
+          id: exampleIframe                             # locator for Frame (You can use "xpath","css","id" type of locators)
+
+      - switchToDefault: true                         # Switch To Default Action (Switch to default content) 
+      
 ```
 
 _______________________
@@ -124,7 +135,7 @@ _______________________
             docker run -t -v <your_local_path_to_reports>:/tmp/reports \ 
             -v <your_local_path_to_test>/ExampleTest.yaml:/tmp/tests/ExampleTest.yaml \
             --rm --link <your_influxdb_name_or_id>:influx_db_link --name perfui \
-            getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e example 
+            getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e Demo 
         ```
 
 #### To run your configured scenario, mount it to `getcarrier/perf-ui` container as:
@@ -137,7 +148,7 @@ When you configured your own test file run command should looks example below (w
     docker run -t -v <your_local_path_to_reports>:/tmp/reports \ 
     -v <your_local_path_to_test>/ExampleTest.yaml:/tmp/tests/ExampleTest.yaml \
     --rm --name perfui \
-    getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e example 
+    getcarrier/perf-ui -n 1 -t ExampleTest.yaml -e Demo 
 ```
 
 ____________________

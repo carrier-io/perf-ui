@@ -30,9 +30,9 @@ function Logger(influx_conf, scenario) {
     this.scenario = scenario;
 }
 
-Logger.prototype.logInfo = function (driver, pageName, status) {
+Logger.prototype.logInfo = function (driver, pageName, status, isAlert = false) {
     var outer_this = this;
-    outer_this.measure(driver, pageName, status)
+    outer_this.measure(driver, pageName, status, isAlert)
         .then(() => {
             return driver.executeScript('performance.clearResourceTimings()');
         });
@@ -80,7 +80,8 @@ function defineErrorType(pageName, errorMessage) {
     }
 }
 
-Logger.prototype.measure = function (driver, pageName, status) {
+Logger.prototype.measure = function (driver, pageName, status, isAlert) {
+    sleep(2);
     var outer_this = this;
     return new Promise(function (resolve, reject) {
         var script = "return {" +
@@ -92,9 +93,11 @@ Logger.prototype.measure = function (driver, pageName, status) {
 
         driver.executeScript(script).then(perfData => {
 
-            console.log(JSON.stringify(perfData.navigation[0].name));
+            var diff = outer_this.perf_client.parsePerfData(perfData, isAlert);
 
-            var diff = outer_this.perf_client.parsePerfData(perfData);
+            if (!diff.is_page) {
+                pageName = pageName + 'Action';
+            }
 
             var data = ['uiperf', {
                 page: pageName,
@@ -130,11 +133,18 @@ Logger.prototype.measure = function (driver, pageName, status) {
 
             data = data.concat(datacell);
             outer_this.client.write(data[0]).tag(data[1]).field(data[2]).queue();
-            outer_this.client.syncWrite();
+            outer_this.client.syncWrite().catch((error)=> {console.log(error)});
             resolve();
         })
 
     });
 };
+
+function sleep(time) {
+    var stop = new Date().getTime();
+    while (new Date().getTime() < stop + time * 1000) {
+        ;
+    }
+}
 
 module.exports = Logger;

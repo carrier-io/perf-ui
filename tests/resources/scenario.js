@@ -14,14 +14,33 @@
    limitations under the License.
 */
 
-const { Builder, By } = require('selenium-webdriver')
+const {
+    Builder,
+    By
+} = require('selenium-webdriver')
 
 require('chromedriver');
+
+const testSteps = 'steps'
+const locatorXpath = 'xpath'
+const locatorCss = 'css'
+const locatorId = 'id'
+const testUrl = 'url'
+const testInput = 'input'
+const inputValue = 'value'
+const testClick = 'click'
+const testCheck = 'check'
+
+const switchToFrame = 'switchToFrame'
+const switchToDefault = 'switchToDefault'
+
 
 var Waiter = require("./waiters")
 var Lighthouse = require('./lighthouse')
 var Logger = require('./logger')
-const { format } = require('util')
+const {
+    format
+} = require('util')
 var utils = require('./utils')
 var JUnitBuilder = require('./junit_reporter')
 
@@ -39,7 +58,8 @@ function ScenarioBuilder(test_name, influx_conf, rp) {
 }
 
 const lighthouse_opts = {
-    chromeFlags: ['--show-paint-rects', '--window-size=1440,900']
+    chromeFlags: ['--show-paint-rects', '--window-size=1440,900'],
+    disableDeviceEmulation: true
 };
 
 const capabilities = {
@@ -50,71 +70,149 @@ const capabilities = {
     }
 }
 
-ScenarioBuilder.prototype.testStep = function (driver, page_name, url, param, check, waiter, iteration) {
-    var status = 'ok';
-    var outer_this = this;
+ScenarioBuilder.prototype.testStep_v1 = function (driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, iteration, scenarioIter) {
     var page_name = page_name.replace(/[^a-zA-Z0-9_]+/g, '_')
     var lh_name = `${page_name}_lh_${iteration}`
+    var status = 'ok';
+    var outer_this = this;
 
-    console.log("Opening %s page (%d)", page_name, iteration)
+    console.log("Opening %s TestCase (%d)", page_name, iteration)
 
-    return driver.get(url).then(() => {
-        if (check != null || check != undefined) {
-            if (check['xpath'] != null) {
-                var xpath = By.xpath(check['xpath'])
-                return waiter.waitFor(xpath)
-                    .then(() => waiter.waitUntilVisible(xpath))
+    return driver.sleep(1).then(()=>outer_this.execList(driver, scenarioIter, baseUrl, pageCheck, stepList, waiter))
+                    .catch((error) => outer_this.errorHandler(driver, page_name, error, baseUrl, parameters, lh_name, status))
+                    .then((status) => outer_this.analyseAndReportResult(driver, page_name, baseUrl, parameters, lh_name, status))
+}
 
-            } else if (check['css'] != null) {
-                var css = By.css(check['css'])
-                return waiter.waitFor(css)
-                    .then(() => waiter.waitUntilVisible(css))
+ScenarioBuilder.prototype.execList = function (driver,scenarioIter, baseUrl, pageCheck, stepList, waiter) {
+
+    var locator;
+    var lastStep;
+
+    if (scenarioIter == 0 || baseUrl != null || baseUrl != undefined){
+        lastStep = driver.get(baseUrl)
+    }
+
+    for (i = 0; i < stepList.length; i++) {
+        if (stepList[i] == undefined || stepList[i] == null) {
+            continue;
+        }
+        if (stepList[i][0] == 'url') {
+            var targetUrl = stepList[i][1]
+            lastStep = driver.get(targetUrl)
+        }
+        if (stepList[i][0] == 'input') {
+            if (stepList[i][1] == 'xpath') {
+                locator = By.xpath(stepList[i][2])
+            } else {
+                locator = By.css(stepList[i][2])
+            }
+            var value = stepList[i][3]
+            var inputField = driver.findElement(locator)
+            if (inputField.getText != "") {
+                inputField.clear()
+            }
+            lastStep = inputField.sendKeys(value);
+        }
+        if (stepList[i][0] == 'click') {
+            if (stepList[i][1] == 'xpath') {
+                locator = By.xpath(stepList[i][2])
+            } else {
+                locator = By.css(stepList[i][2])
+            }
+            var clickElement = driver.findElement(locator)
+            lastStep = clickElement.click()
+        }
+        if (stepList[i][0] == 'check') {
+            if (stepList[i][1] == 'xpath') {
+                locator = By.xpath(stepList[i][2])
+            } else {
+                locator = By.css(stepList[i][2])
+            }
+            var firstWait = waiter.waitFor(locator).then(() => waiter.waitUntilVisible(locator))
+            lastStep = driver.executeScript("arguments[0].scrollIntoView();", firstWait)
+        }
+        if (stepList[i][0] == 'switchToFrame') {
+            if (stepList[i][1] == 'id'){
+                locator = stepList[0][2]
+            }
+            if (stepList[i][1] == 'xpath'){
+                locator = driver.findElement(By.xpath(stepList[i][2]))
+            }
+            if (stepList[i][1] == 'css'){
+                locator = driver.findElement(By.css(stepList[i][2]))
+            }
+            lastStep = driver.switchTo().frame(locator)
+        }
+        if (stepList[i][0] == 'switchToDefault'){
+            if (stepList[i][1]){
+                lastStep = driver.switchTo().defaultContent()
             }
         }
-    })
-        .catch((error) => {
-            console.log(`Open ${page_name} page failed.`)
+    }
+    if (pageCheck != null || pageCheck != undefined) {
+        if (pageCheck['xpath'] != null || pageCheck['xpath'] != undefined) {
+            locator = By.xpath(pageCheck['xpath'])
+        } else {
+            locator = By.css(pageCheck['css'])
+        }
+        lastStep = waiter.waitFor(locator).then(() => waiter.waitUntilVisible(locator))
+    }
+    lastStep = driver.sleep(2000)
+    return lastStep
+}
 
-            if (!outer_this.logger && !outer_this.rp) {
-                utils.takeScreenshot(driver, `${page_name}_Failed`)
-            }
+ScenarioBuilder.prototype.errorHandler = function (driver, page_name, error, pageUrl, param, lh_name, status) {
+    console.log(`Test Case ${page_name} failed.`)
+    status = 'ko';
+    var outer_this = this;
 
-            outer_this.lighthouse.startLighthouse(lh_name, lighthouse_opts, driver, this.testName);
+    if (!outer_this.logger && !outer_this.rp) {
+        utils.takeScreenshot(driver, `${page_name}_Failed`)
+    }
 
-            if (outer_this.logger) {
-                utils.takeScreenshot(driver, `${page_name}_Failed`)
-                outer_this.logger.logError(error, url, page_name, param)
-            }
-            if (outer_this.rp) {
-                outer_this.rp.reportIssue(error, url, param, page_name, driver, lh_name)
-            }
-            outer_this.junit.failCase(page_name, error)
-            status = 'ko';
-        }).then(() => {
-            if (!outer_this.logger && !outer_this.rp && status != 'ko') {
-                utils.takeScreenshot(driver, page_name)
-            }
-            if (status != 'ko') {
-                outer_this.lighthouse.startLighthouse(lh_name, lighthouse_opts, driver, this.testName);
-                outer_this.junit.successCase(page_name)
-            }
-            if (outer_this.logger) {
-                if (status != 'ko') {
-                    utils.takeScreenshot(driver, page_name)
-                }
-                outer_this.logger.logInfo(driver, page_name, status)
-            }
-            if (outer_this.rp && status != 'ko') {
-                outer_this.rp.reportResult(page_name, url, param, driver, lh_name)
-            }
-        })
+    outer_this.lighthouse.startLighthouse(lh_name, lighthouse_opts, driver, this.testName);
+
+    if (outer_this.logger) {
+        utils.takeScreenshot(driver, `${page_name}_Failed`)
+        outer_this.logger.logError(error, pageUrl, page_name, param)
+    }
+    if (outer_this.rp) {
+        outer_this.rp.reportIssue(error, pageUrl, param, page_name, driver, lh_name)
+    }
+    outer_this.junit.failCase(page_name, error)
+
+    return status
+}
+ScenarioBuilder.prototype.analyseAndReportResult = function (driver, page_name, pageUrl, param, lh_name, status) {
+    var outer_this = this;
+    console.log(`Starting Analyse ${page_name}.`)
+    if (status == null || status == undefined) {
+        status = 'ok'
+    }
+    if (!outer_this.logger && !outer_this.rp && status != 'ko') {
+        utils.takeScreenshot(driver, page_name)
+    }
+    if (status != 'ko') {
+        outer_this.lighthouse.startLighthouse(lh_name, lighthouse_opts, driver, this.testName);
+        outer_this.junit.successCase(page_name)
+    }
+    if (outer_this.logger) {
+        if (status != 'ko') {
+            utils.takeScreenshot(driver, page_name)
+        }
+        outer_this.logger.logInfo(driver, page_name, status)
+    }
+    if (outer_this.rp && status != 'ko') {
+        outer_this.rp.reportResult(page_name, pageUrl, param, driver, lh_name)
+    }
 }
 
 ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
-    var driver;
-    var outer_this = this;
 
-    driver = new Builder().withCapabilities(capabilities)
+    var outer_this = this;
+    var baseUrl
+
+    var driver = new Builder().withCapabilities(capabilities)
         .setAlertBehavior('accept')
         .forBrowser('chrome').build();
     await driver.get("chrome://version");
@@ -126,43 +224,111 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
         if (word.match(/--remote-debugging-port=*/)) {
             port = Number(word.split('=')[1]);
             lighthouse_opts.port = port;
-        } else {
-        }
+        } else { }
     });
 
     var test_name = outer_this.testName
 
     var waiter = new Waiter(driver)
+    var scenarioIter = 0;
 
     try {
         console.log(`${test_name} test, iteration ${iteration}`)
         for (let page_name in scenario) {
-            var page = scenario[page_name]
-            var url = page['url']
-            var parameters = page['parameters']
-            var check = page['check']
 
-            if (parameters != null || parameters != undefined) {
-                if (parameters.length > 1) {
-                    for (let param of parameters) {
-                        let page_url = url + param
-                        let name = format("%s_%d", page_name, parameters.indexOf(param))
-                        await outer_this.testStep(driver, name, page_url, param, check, waiter, iteration)
-                    }
-                } else {
-                    let page_url = url + parameters
-                    await outer_this.testStep(driver, page_name, page_url, parameters, check, waiter, iteration)
-                }
+            var stepList = []
+            var page = scenario[page_name]
+            var parameters = page['parameters']
+            var pageUrlWithParameters
+            var pageCheck
+
+            if (page['url'] != null || page['url'] != undefined) {
+                var baseUrl = page['url']
+            }
+            if (page['check'] != null || page['check']) {
+                pageCheck = page['check']
             } else {
-                await outer_this.testStep(driver, page_name, url, parameters, check, waiter, iteration)
+                pageCheck = null;
             }
 
+            if (page[testSteps] != null || page[testSteps] != undefined) {
+                for (i = 0; i < page[testSteps].length; i++) {
+                    if (page[testSteps][i][testUrl]) {
+                        var url = page[testSteps][i][testUrl]
+                        stepList[i] = [testUrl, url]
+                    }
+                    if (page[testSteps][i][testInput]) {
+                        var inputStep = page[testSteps][i][testInput]
+                        if (inputStep[locatorXpath]) {
+                            stepList[i] = [testInput, locatorXpath, inputStep[locatorXpath], inputStep[inputValue]]
+                        }
+                        if (inputStep[locatorCss]) {
+                            stepList[i] = [testInput, locatorCss, inputStep[locatorCss], inputStep[inputValue]]
+                        }
+                    }
+                    if (page[testSteps][i][testClick]) {
+                        stepClick = page[testSteps][i][testClick]
+                        if (stepClick[locatorXpath]) {
+                            stepList[i] = [testClick, locatorXpath, stepClick[locatorXpath]]
+                        }
+                        if (stepClick[locatorCss]) {
+                            stepList[i] = [testClick, locatorCss, stepClick[locatorCss]]
+                        }
+                    }
+                    if (page[testSteps][i][testCheck]) {
+                        stepCheck = page[testSteps][i][testCheck]
+                        if (stepCheck[locatorXpath]) {
+                            stepList[i] = [testCheck, locatorXpath, stepCheck[locatorXpath]]
+                        }
+                        if (stepCheck[locatorCss]) {
+                            stepList[i] = [testCheck, locatorCss, stepCheck[locatorCss]]
+                        }
+                    }
+                    if (page[testSteps][i][switchToFrame]) {
+                        stepSwitch = page[testSteps][i][switchToFrame]
+                        if (stepSwitch[locatorId]) {
+                            stepList[i] = [switchToFrame, locatorId, stepSwitch[locatorId]]
+                        }
+                        if (stepSwitch[locatorXpath]) {
+                            stepList[i] = [switchToFrame, locatorXpath, stepSwitch[locatorXpath]]
+                        }
+                        if (stepSwitch[locatorCss]) {
+                            stepList[i] = [switchToFrame, locatorCss, stepSwitch[locatorCss]]
+                        }
+                    }
+                    if (page[testSteps][i][switchToDefault]) {
+                        stepSwitch = page[testSteps][i][switchToDefault]
+                        stepList[i] = [switchToDefault, true]
+                    }
+                }
+            }
+            if (parameters != null || parameters != undefined) {
+                if (parameters.length > 1) {
+                    var paramIterator = 1
+                    for (let parameter of parameters) {
+                        pageUrlWithParameters = baseUrl + parameter
+                        pageNameWithParameter = page_name + "_" + paramIterator
+                        await outer_this.testStep_v1(driver, pageNameWithParameter, pageUrlWithParameters, parameter, pageCheck, stepList, waiter, iteration, scenarioIter)
+                        paramIterator += 1
+                    }
+
+                } else {
+                    var pageUrlWithParameters = baseUrl + parameters
+                    await outer_this.testStep_v1(driver, page_name, pageUrlWithParameters, parameters, pageCheck, stepList, waiter, iteration, scenarioIter)
+                }
+            }
+            else {
+                await outer_this.testStep_v1(driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, iteration, scenarioIter)
+            }
             await utils.sleep(3)
+            scenarioIter+= 1
         }
-    } catch (e) {
-        outer_this.junit.errorCase(e)
+    } catch (error) {
+        console.log(error)
+        outer_this.junit.errorCase(error)
+        driver.close();
     } finally {
-        if (iteration == (times - 1)) {
+        if (iteration == (times)) {
             if (outer_this.rp) {
                 await outer_this.rp.finishTestLaunch()
             }
@@ -170,9 +336,8 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
             utils.sleep(5)
             console.info("Congrats, test is done.")
         }
-        await driver.quit();
+        driver.quit();
     }
-
 }
 
 module.exports = ScenarioBuilder

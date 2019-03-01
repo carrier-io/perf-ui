@@ -34,6 +34,18 @@ function formatPerformanceTimingObject(perfTimingObj) {
     };
 }
 
+function formatPerformanceTimingObjectAction(actionDuration) {
+    return {
+        'latency': 0,
+        'transfer': 0,
+        'tti': 0,
+        'ttl': 0,
+        'onload': 0,
+        'total_time': actionDuration
+    };
+}
+
+
 function formatResourceTimingObject(resourceTimingObj) {
     resourceTimingObj.forEach(resource => {
         resource.name = resource.name.replace("?", "-").replace(/=/g, "-").replace(/,/g, "-");
@@ -48,13 +60,33 @@ function formatResourceTimingObject(resourceTimingObj) {
     return resourceTimingObj;
 }
 
-UIPerformanceClient.prototype.parsePerfData = function (data) {
+function measureActionTime(resourceTimingObj) {
+    if (resourceTimingObj.length < 1) {
+        return 0;
+    } else if (resourceTimingObj.length == 1) {
+        return resourceTimingObj[0].duration;
+    }
+    let start = resourceTimingObj[0].startTime;
+    let end = resourceTimingObj[resourceTimingObj.length - 1].responseEnd;
+
+    return end - start;
+}
+
+function compare(a, b) {
+    return JSON.stringify(a) == JSON.stringify(b);
+}
+
+UIPerformanceClient.prototype.parsePerfData = function (data, isFrame) {
     let lastPerfNavTiming = data.navigation[0];
     let lastPerfPaintTiming = data.paint;
     let lastPerfResourceTiming = formatResourceTimingObject(data.resource);
     let perfTiming = data.timing;
+    let navTiming = this.perfNavTiming;
     delete perfTiming.toJSON;
+    
+    let actionDuration = measureActionTime(lastPerfResourceTiming)
     let formattedPerfTiming = formatPerformanceTimingObject(perfTiming);
+    let formattedPerfTimingAction = formatPerformanceTimingObjectAction(actionDuration);
 
     let currentLastResourceIndex = lastPerfResourceTiming.length - 1;
     let parsedURL = utils.parseURL(lastPerfNavTiming.name);
@@ -63,32 +95,64 @@ UIPerformanceClient.prototype.parsePerfData = function (data) {
     let encodedBodySize = lastPerfNavTiming.encodedBodySize;
     let decodedBodySize = lastPerfNavTiming.decodedBodySize;
 
-    this.perfNavTiming = lastPerfNavTiming;
-    this.lastResourceIndex = currentLastResourceIndex;
-    var firstPaint = 0;
-    var firstContentfulPaint = 0;
-
-    try {
-        firstPaint = Math.round(lastPerfPaintTiming[0].startTime);
-        firstContentfulPaint = Math.round(lastPerfPaintTiming[1].startTime);
-    } catch (TypeError) {
-        console.log("Cannot read 'startTime' property");
+    if (isFrame) {
+        navTiming = this.perfFrameTiming;
     }
 
-    return {
-        'navigation': lastPerfNavTiming,
-        'resource': lastPerfResourceTiming,
-        'timing': perfTiming,
-        'formattedTiming': formattedPerfTiming,
-        'domain': parsedURL.domain,
-        'url': parsedURL.path,
-        'firstPaint': firstPaint,
-        'firstContentfulPaint': firstContentfulPaint,
-        'transferSize': transferSize,
-        'encodedBodySize': encodedBodySize,
-        'decodedBodySize': decodedBodySize,
-        'is_page': true
-    };
+    if (compare(navTiming, lastPerfNavTiming) || compare(this.perfFrameTiming, lastPerfNavTiming)) {      
+
+        
+        if (isFrame) {
+            this.lastFrameIndex = currentLastResourceIndex;
+        } else {
+            this.lastResourceIndex = currentLastResourceIndex;
+        }
+
+        return {
+            'navigation': lastPerfNavTiming,
+            'timing': perfTiming,
+            'resource':  lastPerfResourceTiming, //shiftResourceTimings(resourceDiff),
+            'formattedTiming': formattedPerfTimingAction,
+            'domain': parsedURL.domain,
+            'url': parsedURL.path,
+            'duration': actionDuration, //measureActionTime(resourceDiff),
+            'is_page': false
+        };
+    } else {
+        if (isFrame) {
+            this.perfFrameTiming = lastPerfNavTiming;
+            this.lastFrameIndex = currentLastResourceIndex;
+        } else {
+            this.perfNavTiming = lastPerfNavTiming;
+            this.lastResourceIndex = currentLastResourceIndex;
+        }
+
+        var firstPaint = 0;
+        var firstContentfulPaint = 0;
+
+        try {
+            firstPaint = Math.round(lastPerfPaintTiming[0].startTime);
+            firstContentfulPaint = Math.round(lastPerfPaintTiming[1].startTime);
+        } catch (TypeError) {
+            console.log("Cannot read 'startTime' property");
+            console.log("Timing Object: " + lastPerfPaintTiming);
+        }
+
+        return {
+            'navigation': lastPerfNavTiming,
+            'resource': lastPerfResourceTiming,
+            'timing': perfTiming,
+            'formattedTiming': formattedPerfTiming,
+            'domain': parsedURL.domain,
+            'url': parsedURL.path,
+            'firstPaint': firstPaint,
+            'firstContentfulPaint': firstContentfulPaint,
+            'transferSize': transferSize,
+            'encodedBodySize': encodedBodySize,
+            'decodedBodySize': decodedBodySize,
+            'is_page': true
+        };
+    }
 };
 
 module.exports = UIPerformanceClient;
