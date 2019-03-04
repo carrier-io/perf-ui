@@ -77,7 +77,7 @@ Lighthouse.prototype.saveLighthouse = function (data, pageName, simulation) {
             // var formData = configureFormData(scores, pageName)
             // uploadLighthousePage(formData, simulation)
         })
-        console.info('Lighthouse Page data saved to: %s.html\n', pageName);
+        console.info('Lighthouse Page data saved to: %s.html', pageName);
     } catch (e) {
         console.error("Lighthouse page didn't saved.")
         console.error(e)

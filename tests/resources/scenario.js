@@ -43,8 +43,9 @@ const {
 } = require('util')
 var utils = require('./utils')
 var JUnitBuilder = require('./junit_reporter')
+var lightHouseArr
 
-function ScenarioBuilder(test_name, influx_conf, rp) {
+function ScenarioBuilder(test_name, influx_conf, rp, lightHouseDevice) {
     this.testName = test_name.replace(/\.y.?ml/g, '')
     if (influx_conf && influx_conf['url'] != null) {
         this.logger = new Logger(influx_conf, this.testName)
@@ -55,11 +56,17 @@ function ScenarioBuilder(test_name, influx_conf, rp) {
     this.junit = new JUnitBuilder(this.testName)
 
     this.lighthouse = new Lighthouse()
+    lightHouseArr = lightHouseDevice
 }
+
 
 const lighthouse_opts = {
     chromeFlags: ['--show-paint-rects', '--window-size=1440,900'],
     disableDeviceEmulation: true
+};
+
+const lighthouse_opts_mobile = {
+    chromeFlags: ['--show-paint-rects', '--window-size=1440,900']
 };
 
 const capabilities = {
@@ -76,7 +83,7 @@ ScenarioBuilder.prototype.testStep_v1 = function (driver, page_name, baseUrl, pa
     var status = 'ok';
     var outer_this = this;
 
-    console.log("Opening %s TestCase (%d)", page_name, iteration)
+    console.log("\nOpening %s TestCase (%d)", page_name, iteration)
 
     return driver.sleep(1).then(()=>outer_this.execList(driver, scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl))
                     .catch((error) => outer_this.errorHandler(driver, page_name, error, baseUrl, parameters, lh_name, status))
@@ -170,14 +177,23 @@ ScenarioBuilder.prototype.errorHandler = function (driver, page_name, error, pag
         utils.takeScreenshot(driver, `${page_name}_Failed`)
     }
 
-    outer_this.lighthouse.startLighthouse(lh_name, lighthouse_opts, driver, this.testName);
+    if (lightHouseArr != undefined || lightHouseArr != null) {
+        if (lightHouseArr['mobile']) {
+            var lh_name_mobile = lh_name + "_mobile"
+            outer_this.lighthouse.startLighthouse(lh_name_mobile, lighthouse_opts_mobile, driver, this.testName);
+        }
+        if (lightHouseArr['desktop']) {
+            var lh_name_desktop = lh_name + "_desktop"
+            outer_this.lighthouse.startLighthouse(lh_name_desktop, lighthouse_opts, driver, this.testName);
+        }
+    }
 
     if (outer_this.logger) {
         utils.takeScreenshot(driver, `${page_name}_Failed`)
         outer_this.logger.logError(error, pageUrl, page_name, param)
     }
     if (outer_this.rp) {
-        outer_this.rp.reportIssue(error, pageUrl, param, page_name, driver, lh_name)
+        outer_this.rp.reportIssue(error, pageUrl, param, page_name, driver, lh_name_mobile, lh_name_desktop)
     }
     outer_this.junit.failCase(page_name, error)
 
@@ -193,7 +209,19 @@ ScenarioBuilder.prototype.analyseAndReportResult = function (driver, page_name, 
         utils.takeScreenshot(driver, page_name)
     }
     if (status != 'ko') {
-        outer_this.lighthouse.startLighthouse(lh_name, lighthouse_opts, driver, this.testName);
+        if (lightHouseArr != undefined || lightHouseArr != null) {
+            if (lightHouseArr['mobile']) {
+                var lh_name_mobile = lh_name + "_mobile"
+                outer_this.lighthouse.startLighthouse(lh_name_mobile, lighthouse_opts_mobile, driver, this.testName);
+            }
+            if (lightHouseArr['desktop']) {
+                var lh_name_desktop = lh_name + "_desktop"
+                outer_this.lighthouse.startLighthouse(lh_name_desktop, lighthouse_opts, driver, this.testName);
+            }
+        }
+        // else{
+        //     outer_this.lighthouse.startLighthouse(lh_name, lighthouse_opts, driver, this.testName);
+        // }
         outer_this.junit.successCase(page_name)
     }
     if (outer_this.logger) {
@@ -203,7 +231,7 @@ ScenarioBuilder.prototype.analyseAndReportResult = function (driver, page_name, 
         outer_this.logger.logInfo(driver, page_name, status)
     }
     if (outer_this.rp && status != 'ko') {
-        outer_this.rp.reportResult(page_name, pageUrl, param, driver, lh_name)
+        outer_this.rp.reportResult(page_name, pageUrl, param, driver, lh_name_mobile, lh_name_desktop)
     }
 }
 
@@ -223,6 +251,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
         if (word.match(/--remote-debugging-port=*/)) {
             port = Number(word.split('=')[1]);
             lighthouse_opts.port = port;
+            lighthouse_opts_mobile.port = port;
         } else { }
     });
 

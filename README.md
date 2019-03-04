@@ -82,6 +82,11 @@ reportportal:
      - Google Test
      - www.google.com
 
+# Lighthouse tool config (not required)
+# Lighthouse config example:
+lighthouseDeviceEmulate:                                   
+   mobile: (false|true)                     # Enable or disable audit for mobile version               
+   desktop: (false|true)                    # Enable or disable audit for desktop device
 
 # Test Config
 # For test config is required: 

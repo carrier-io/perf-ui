@@ -101,7 +101,7 @@ ReportPortal.prototype.sendTestLogWithFile = function (step, file_path, file_nam
     })
 }
 
-ReportPortal.prototype.reportIssue = function (error, domain, url_path, page_name, driver, lh_name) {
+ReportPortal.prototype.reportIssue = function (error, domain, url_path, page_name, driver, lh_name_mobile, lh_name_desktop) {
     var outer_this = this;
     var status = 'ko';
     var err_message = "Open " + page_name + " failed"
@@ -114,7 +114,16 @@ ReportPortal.prototype.reportIssue = function (error, domain, url_path, page_nam
     utils.takeScreenshot(driver, image_name)
         .then(() => outer_this.sendTestLogWithFile(step, outer_this.image_path, `${image_name}.png`, "image/png", `Screenshot: ${image_name}.png`))
         .catch(error => console.log("Failed to load screenshot.\n" + error))
-        .then(() => outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}.html`, "xml", `Lighthouse result: ${lh_name}.html`))
+        .then(() => {
+            if (lh_name_mobile != null || lh_name_mobile != undefined) { 
+                outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name_mobile}.html`, "text/xml", `Lighthouse result: ${lh_name_mobile}.html`) 
+            }
+        })
+        .then(() => {
+            if (lh_name_desktop != null || lh_name_desktop != undefined) { 
+                outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name_desktop}.html`, "text/xml", `Lighthouse result: ${lh_name_desktop}.html`) 
+            }
+        })
         .then(() => outer_this.sendTestLog(step, 'ERROR', error_id))
         .then(() => outer_this.sendTestLog(step, 'WARN', `Test error: ${error}`))
         .then(() => outer_this.sendTestLog(step, 'WARN', `Error message: ${err_message}`))
@@ -133,13 +142,13 @@ ReportPortal.prototype.reportIssue = function (error, domain, url_path, page_nam
     })
 }
 
-ReportPortal.prototype.reportResult = function (page_name, url, path, driver, lh_name) {
+ReportPortal.prototype.reportResult = function (page_name, url, path, driver, lh_name_mobile, lh_name_desktop) {
     var outer_this = this;
     var tmp = new Date().getTime();
     var image_name = `${page_name}_${tmp}`
 
     var step = outer_this.startItem(page_name, `Results for ${page_name}`, [page_name, url]);
-    
+
     utils.takeScreenshot(driver, image_name)
         .then(() => outer_this.sendTestLog(step, 'INFO', `Page name: ${page_name}`))
         .then(() => outer_this.sendTestLog(step, 'INFO', `URL: ${url}`))
@@ -149,7 +158,16 @@ ReportPortal.prototype.reportResult = function (page_name, url, path, driver, lh
             }
         })
         .then(() => outer_this.sendTestLogWithFile(step, outer_this.image_path, `${image_name}.png`, "image/png", `Screenshot: ${image_name}.png`))
-        .then(() => outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}.html`, "text/xml", `Lighthouse result: ${lh_name}.html`))
+        .then(() => {
+            if (lh_name_mobile != null || lh_name_mobile != undefined) { 
+                outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name_mobile}.html`, "text/xml", `Lighthouse result: ${lh_name_mobile}.html`) 
+            }
+        })
+        .then(() => {
+            if (lh_name_desktop != null || lh_name_desktop != undefined) { 
+                outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name_desktop}.html`, "text/xml", `Lighthouse result: ${lh_name_desktop}.html`) 
+            }
+        })
         .finally(() => outer_this.finishItem(step.tempId, 'passed'))
 
 }

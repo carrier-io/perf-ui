@@ -43,6 +43,7 @@ var influx_conf = parsed_scenario.influxdb || null
 var rp_conf = parsed_scenario.reportportal || null
 var scenario = parsed_scenario[env]
 var rp;
+var lighthouseDeviceType = parsed_scenario.lighthouseDeviceEmulate || null
 
 if (rp_conf && rp_conf['url'] && rp_conf['token'] && rp_conf['project']) {
     rp = new ReportPortal(rp_conf)
@@ -52,7 +53,7 @@ if (rp_conf && rp_conf['url'] && rp_conf['token'] && rp_conf['project']) {
     console.log(`Your config:\n ${rp_conf}`)
 }
 
-var ScenarioBuilder = new Scenario(test_name, influx_conf, rp)
+var ScenarioBuilder = new Scenario(test_name, influx_conf, rp, lighthouseDeviceType)
 
 async function run() {
     for (var j = 1; j <= times; j++) {

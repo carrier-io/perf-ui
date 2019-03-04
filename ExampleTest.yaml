@@ -11,47 +11,58 @@
 #  launch_tags:
 #    - Demo test
 #    - New features
+lighthouseDeviceEmulate:
+ mobile: true
+ desktop: true
 Demo: # TestSuite
-    SearchWithParameters: # TestCase
-        url: https://www.etsy.com/search?q=
+    MicrosoftHome:
+        url: https://www.microsoft.com
+        steps:
+            - click:
+                xpath: //div[@class='mectrl_signin mectrl_truncate']
+    MicrosoftLogInEmailForm:
+        steps:
+            - check:
+                xpath: //input[@type='email']
+            - input:
+                xpath: //input[@type='email']
+                value: carrier-perf-ui@outlook.com
+            - click:
+                xpath: //input[@type='submit']
+    MicrosoftLogInPassForm:
+        steps:
+            - check:
+                xpath: //input[@type='password']
+            - input:
+                xpath: //input[@type='password']
+                value: perf-ui-pass
+            - click:
+                xpath: //input[@type='submit']
+    MicrosoftLogOut:
+        steps:
+            - click:
+                xpath: //div[contains(text(),'Perf')]
+            - check:
+                xpath: //a[@id='mectrl_viewAccount']
+            - click:
+                xpath: //a[@class='mectrl_resetStyle mectrl_signout mectrl_truncate']
+            - check:
+                xpath: //div[@id='mectrl_headerPicture']
+Demo2:
+    AmazonSearchWithParameters:
+        url: https://www.amazon.com/s?k=
         parameters:
-            - hats
-            - shoese
-    SearchWithInputData: # TestCase
-        url: https://www.etsy.com/
+            - Fender+Jazz+Bass
+            - Fender+Jaguar
+        check:
+            xpath: //span[contains(text(),'results')]
+    AmazonAdvancedSearch:
+        url: https://www.amazon.com
         steps:
             - input:
-                xpath: //input[@id='search-query']
-                value: converse
+                xpath: //input[@id='twotabsearchtextbox']
+                value: mac book pr
             - check:
-                xpath: //button[@value='Search']
+                xpath: //div[@id="issDiv4"]
             - click:
-                xpath: //button[@value='Search']
-    LoginIntoService: #TestCase
-        steps:
-            - click: 
-                xpath: //a[@id='sign-in']
-            - check:
-                xpath: //input[@id='join_neu_email_field']
-            - input:
-                xpath: //input[@id='join_neu_email_field']
-                value: hupfyn@gmail.com
-            - check:
-                xpath: //input[@id='join_neu_password_field']
-            - input:
-                xpath: //input[@id='join_neu_password_field']
-                value: RootRootRoot
-            - click:
-                xpath: //button[@value='sign-in']
-    ScrollToElement: # TestCase
-        steps:
-            - check:
-                xpath: //span[@class='etsy-icon footer-logo']
-    SwitchToFrame: # TestCase
-        url: https://aframe.io/
-        steps:
-            - switchToFrame:
-                id: exampleIframe
-            - check:
-                xpath: //a-entity[@id='logo']
-            - switchToDefault: true
+                xpath: //div[@id="issDiv4"]
