@@ -67,18 +67,18 @@ influxdb:
    
 # ReportPortal tool config (not required)
 # Required fields:
-#  - url
-#  - token
-#  - project
-#  - launch_name
+#  - rp_host
+#  - rp_token
+#  - rp_project_name
+#  - rp_launch_name
 
 # ReportPortal config example:
 reportportal:                               
-   url: https://rp_url/api/v1               # ReportPortal API url
-   token: your-rp-uuid-token                # Long-living auth token (UUID) for ReportPortal
-   project: your_project_name               # ReportPortal project name where results will be send
-   launch_name: UI_Google_Test              # Launch name for your test
-   launch_tags:                             # Launch tags to filter existing launches and show them on RP dashboard
+   rp_host: rp_url                          # ReportPortal API url
+   rp_token: your-rp-uuid-token             # Long-living auth token (UUID) for ReportPortal
+   rp_project_name: your_project_name       # ReportPortal project name where results will be send
+   rp_launch_name: UI_Google_Test           # Launch name for your test
+   rp_launch_tags:                          # Launch tags to filter existing launches and show them on RP dashboard
      - Google Test
      - www.google.com
 

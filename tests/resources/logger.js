@@ -19,23 +19,25 @@ var UIPerformanceClient = require('./ui_perf_client');
 var Lighthouse = require('./lighthouse');
 var utils = require('./utils')
 
+function Logger(influx_conf, scenario, triger) {
 
-function Logger(influx_conf, scenario) {
-    var influx_host = influx_conf['url'] + influx_conf['db_name']
-    if(influx_conf['user'] && influx_conf['password']) {
-        influx_host = influx_host.replace(/:\/\//g, `://${influx_conf['user']}:${influx_conf['password']}@`)
+    this.triger = triger;
+    if (triger){
+        var influx_host = influx_conf['url'] + influx_conf['db_name']
+        if (influx_conf['user'] && influx_conf['password']) {
+            influx_host = influx_host.replace(/:\/\//g, `://${influx_conf['user']}:${influx_conf['password']}@`)
+        }
+        this.client = new InfluxDB(influx_host);
     }
-    this.client = new InfluxDB(influx_host);
     this.perf_client = new UIPerformanceClient();
     this.scenario = scenario;
+    
 }
 
-Logger.prototype.logInfo = function (driver, pageName, status, isAlert = false) {
+Logger.prototype.logInfo = async function (driver, pageName, status, isAlert = false) {
     var outer_this = this;
-    outer_this.measure(driver, pageName, status, isAlert)
-        .then(() => {
-            return driver.executeScript('performance.clearResourceTimings()');
-        });
+    return await outer_this.measure(driver, pageName, status, isAlert)
+        .then((actionHandler) => { return actionHandler });
 };
 
 Logger.prototype.logError = function (error, domain, pageName, url) {
@@ -56,15 +58,17 @@ Logger.prototype.logError = function (error, domain, pageName, url) {
             'error_details': utils.formatString(error),
             'error_message': message
         };
-        outer_this.client.write('errors').tag(tags).field(fields).queue();
-        outer_this.client.syncWrite()
-            .then(() => {
-                resolve(status);
-            })
-            .catch(error => {
-                console.log(error);
-                resolve(status);
-            })
+        if (outer_this.client != undefined || outer_this.client != null) {
+            outer_this.client.write('errors').tag(tags).field(fields).queue();
+            outer_this.client.syncWrite()
+                .then(() => {
+                    resolve(status);
+                })
+                .catch(error => {
+                    console.log(error);
+                    resolve(status);
+                })
+        }
     })
 }
 
@@ -94,9 +98,11 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
         driver.executeScript(script).then(perfData => {
 
             var diff = outer_this.perf_client.parsePerfData(perfData, isAlert);
+            var actionHandler = false
 
             if (!diff.is_page) {
                 pageName = pageName + 'Action';
+                actionHandler = true
             }
 
             var data = ['uiperf', {
@@ -130,13 +136,13 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
                 datacell['encodedBodySize'] = diff.encodedBodySize;
                 datacell['decodedBodySize'] = diff.decodedBodySize;
             }
-
             data = data.concat(datacell);
-            outer_this.client.write(data[0]).tag(data[1]).field(data[2]).queue();
-            outer_this.client.syncWrite().catch((error)=> {console.log(error)});
-            resolve();
+            if (outer_this.client != undefined || outer_this.client != null){
+                outer_this.client.write(data[0]).tag(data[1]).field(data[2]).queue();
+                outer_this.client.syncWrite().catch((error) => { console.log(error) });
+            }
+            resolve(actionHandler);
         })
-
     });
 };
 

@@ -4,51 +4,17 @@
 #  user: 
 #  password:
 # reportportal:
-#  url: https://rp_url/api/v1 # Should be RP API url
-#  token: your-rp-uuid-token
-#  project: your_project_name
-#  launch_name: UI_Performance_Test
-#  launch_tags:
+#  rp_host: rp_url                  # Should be RP url
+#  rp_token: your-rp-uuid-token
+#  rp_project_name: your_project_name
+#  rp_launch_name: UI_Performance_Test
+#  rp_launch_tags:
 #    - Demo test
 #    - New features
 lighthouseDeviceEmulate:
  mobile: true
  desktop: true
-Demo: # TestSuite
-    MicrosoftHome:
-        url: https://www.microsoft.com
-        steps:
-            - click:
-                xpath: //div[@class='mectrl_signin mectrl_truncate']
-    MicrosoftLogInEmailForm:
-        steps:
-            - check:
-                xpath: //input[@type='email']
-            - input:
-                xpath: //input[@type='email']
-                value: carrier-perf-ui@outlook.com
-            - click:
-                xpath: //input[@type='submit']
-    MicrosoftLogInPassForm:
-        steps:
-            - check:
-                xpath: //input[@type='password']
-            - input:
-                xpath: //input[@type='password']
-                value: perf-ui-pass
-            - click:
-                xpath: //input[@type='submit']
-    MicrosoftLogOut:
-        steps:
-            - click:
-                xpath: //div[contains(text(),'Perf')]
-            - check:
-                xpath: //a[@id='mectrl_viewAccount']
-            - click:
-                xpath: //a[@class='mectrl_resetStyle mectrl_signout mectrl_truncate']
-            - check:
-                xpath: //div[@id='mectrl_headerPicture']
-Demo2:
+Demo:
     AmazonSearchWithParameters:
         url: https://www.amazon.com/s?k=
         parameters:

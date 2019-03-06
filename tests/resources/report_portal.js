@@ -20,16 +20,16 @@ var utils = require('./utils')
 
 function ReportPortal(config) {
     this.rpClient = new RPClient({
-        token: config['token'],
-        endpoint: config['url'],
-        project: config['project'],
+        token: config['rp_token'],
+        endpoint: "https://"+ config['rp_host']+ "/api/v1",
+        project: config['rp_project_name'],
         debug: false
     });
     this.errors = {}
     this.success_pages = {}
-    this.launch_name = config['launch_name']
-    if (config['launch_tags'] != null && config['launch_name'] != undefined) {
-        this.launch_tags = config['launch_tags']
+    this.launch_name = config['rp_launch_name']
+    if (config['rp_launch_tags'] != null && config['rp_launch_name'] != undefined) {
+        this.launch_tags = config['rp_launch_tags']
     }
     this.image_path = `/tmp/reports/screenshots/`;
     this.lh_path = `/tmp/reports/lighthouse_pages/`;
@@ -101,7 +101,7 @@ ReportPortal.prototype.sendTestLogWithFile = function (step, file_path, file_nam
     })
 }
 
-ReportPortal.prototype.reportIssue = function (error, domain, url_path, page_name, driver, lh_name_mobile, lh_name_desktop) {
+ReportPortal.prototype.reportIssue =async function (error, domain, url_path, page_name, driver, lh_name_mobile, lh_name_desktop) {
     var outer_this = this;
     var status = 'ko';
     var err_message = "Open " + page_name + " failed"
@@ -111,7 +111,7 @@ ReportPortal.prototype.reportIssue = function (error, domain, url_path, page_nam
 
     var step = outer_this.startItem(page_name, err_message, [page_name, domain])
 
-    utils.takeScreenshot(driver, image_name)
+    await utils.takeScreenshot(driver, image_name)
         .then(() => outer_this.sendTestLogWithFile(step, outer_this.image_path, `${image_name}.png`, "image/png", `Screenshot: ${image_name}.png`))
         .catch(error => console.log("Failed to load screenshot.\n" + error))
         .then(() => {
@@ -142,14 +142,14 @@ ReportPortal.prototype.reportIssue = function (error, domain, url_path, page_nam
     })
 }
 
-ReportPortal.prototype.reportResult = function (page_name, url, path, driver, lh_name_mobile, lh_name_desktop) {
+ReportPortal.prototype.reportResult =async function (page_name, url, path, driver, lh_name_mobile, lh_name_desktop) {
     var outer_this = this;
     var tmp = new Date().getTime();
     var image_name = `${page_name}_${tmp}`
 
     var step = outer_this.startItem(page_name, `Results for ${page_name}`, [page_name, url]);
 
-    utils.takeScreenshot(driver, image_name)
+    await utils.takeScreenshot(driver, image_name)
         .then(() => outer_this.sendTestLog(step, 'INFO', `Page name: ${page_name}`))
         .then(() => outer_this.sendTestLog(step, 'INFO', `URL: ${url}`))
         .then(() => {

@@ -16,8 +16,8 @@
 
 module.exports = {
 
-    takeScreenshot: function (driver, name) {
-        return driver.takeScreenshot().then(function (data) {
+    takeScreenshot: async function (driver, name) {
+        return await driver.takeScreenshot().then(function (data) {
             name = `${name}.png` || 'ss.png';
             var path = '/tmp/reports/screenshots/';
             var output;

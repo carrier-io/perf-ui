@@ -45,10 +45,10 @@ var scenario = parsed_scenario[env]
 var rp;
 var lighthouseDeviceType = parsed_scenario.lighthouseDeviceEmulate || null
 
-if (rp_conf && rp_conf['url'] && rp_conf['token'] && rp_conf['project']) {
+if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_name']) {
     rp = new ReportPortal(rp_conf)
     rp.startTestLaunch(test_name, `Results for ${test_name}`)
-} else if (rp_conf && (!rp_conf['url'] || !rp_conf['token'] || !rp_conf['project'])) {
+} else if (rp_conf && (!rp_conf['rp_host'] || !rp_conf['rp_token'] || !rp_conf['rp_project_name'])) {
     console.log("Some Report Portal config values don't set\n")
     console.log(`Your config:\n ${rp_conf}`)
 }

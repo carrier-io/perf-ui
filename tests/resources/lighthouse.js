@@ -62,17 +62,17 @@ function uploadLighthousePage(formData, simulation) {
         });
 }
 
-Lighthouse.prototype.runLighthouse = function (url, lighthouse_opts, config = null) {
-    return lighthouse(url, lighthouse_opts, config).then(results => {
+Lighthouse.prototype.runLighthouse =async function (url, lighthouse_opts, config = null) {
+    return await lighthouse(url, lighthouse_opts, config).then(results => {
         delete results.artifacts;
         return results
     });
 }
 
 
-Lighthouse.prototype.saveLighthouse = function (data, pageName, simulation) {
+Lighthouse.prototype.saveLighthouse = async function (data, pageName, simulation) {
     try {
-        write(data, 'html', `/tmp/reports/lighthouse_pages/${pageName}.html`).then(() => {
+        await write(data, 'html', `/tmp/reports/lighthouse_pages/${pageName}.html`).then(() => {
             var scores = getScores(data)
             // var formData = configureFormData(scores, pageName)
             // uploadLighthousePage(formData, simulation)
@@ -84,9 +84,9 @@ Lighthouse.prototype.saveLighthouse = function (data, pageName, simulation) {
     }
 }
 
-Lighthouse.prototype.startLighthouse = function (pageName, lighthouse_opts, driver, simulation) {
+Lighthouse.prototype.startLighthouse =async function (pageName, lighthouse_opts, driver, simulation) {
     var outer_this = this;
-        driver.getCurrentUrl()
+        return await driver.getCurrentUrl()
             .then(url => outer_this.runLighthouse(url, lighthouse_opts)
                 .then(results => outer_this.saveLighthouse(results, pageName, simulation)))
 }
