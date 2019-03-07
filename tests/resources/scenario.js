@@ -30,6 +30,7 @@ const testInput = 'input'
 const inputValue = 'value'
 const testClick = 'click'
 const testCheck = 'check'
+const testCheckNotPresent = 'checkIsNot'
 
 const switchToFrame = 'switchToFrame'
 const switchToDefault = 'switchToDefault'
@@ -96,6 +97,7 @@ ScenarioBuilder.prototype.testStep_v1 = async function (driver, page_name, baseU
 
 ScenarioBuilder.prototype.execList = async function (driver,scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl) {
 
+    var outer_this = this;
     var locator;
     var actionStep;
 
@@ -126,9 +128,16 @@ ScenarioBuilder.prototype.execList = async function (driver,scenarioIter, baseUr
             else{
                 locator = By.css(actionStep[2])
             }
-            value = actionStep[3]
-            await waiter.waitFor(locator).then(()=> waiter.waitUntilVisible(locator)).then((element)=> driver.executeScript('arguments[0].scrollIntoView();',element))
-            
+            await waiter.waitFor(locator).then((element)=> waiter.waitUntilVisible(element))
+        }
+        if (actionStep[0] == 'checkIsNot'){
+            if (actionStep[1]== 'xpath'){
+                locator = By.xpath(actionStep[2])
+            }
+            else {
+                locator = By.css(actionStep[2])
+            }
+            await waiter.waitFor(locator).then((element) => waiter.waitUntilNotVisible(element))
         }
         if (actionStep[0] == 'click'){
             if (actionStep[1]== 'xpath'){
@@ -137,7 +146,6 @@ ScenarioBuilder.prototype.execList = async function (driver,scenarioIter, baseUr
             else{
                 locator = By.css(actionStep[2])
             }
-            value = actionStep[3]
             await driver.findElement(locator).click()
         }
         if (actionStep[0] == 'switchToFrame') {
@@ -168,7 +176,7 @@ ScenarioBuilder.prototype.execList = async function (driver,scenarioIter, baseUr
         } else {
             locator = By.css(pageCheck['css'])
         }
-        await waiter.waitFor(locator).then(()=> waiter.waitUntilVisible(locator)).then((element)=> driver.executeScript('arguments[0].scrollIntoView();',element))
+        await waiter.waitFor(locator).then((element)=> waiter.waitUntilVisible(element))        
     }
     await driver.sleep(2000)
 }
@@ -290,6 +298,15 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         }
                         if (inputStep[locatorCss]) {
                             stepList[i] = [testInput, locatorCss, inputStep[locatorCss], inputStep[inputValue]]
+                        }
+                    }
+                    if (page[testSteps][i][testCheckNotPresent]){
+                        var inputStep = page[testSteps][i][testCheckNotPresent]
+                        if (inputStep[locatorXpath]){
+                            stepList[i] = [testCheckNotPresent,locatorXpath, inputStep[locatorXpath]]
+                        }
+                        if (inputStep[locatorCss]){
+                            stepList[i] = [testCheckNotPresent,locatorCss, inputStep[locatorCss]]
                         }
                     }
                     if (page[testSteps][i][testClick]) {

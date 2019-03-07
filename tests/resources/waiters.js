@@ -25,22 +25,18 @@ function Waiter(driver) {
 
 Waiter.prototype.waitFor = async function (locator, timeout) {
     var waitTimeout = timeout || globalTimeout;
-    await this.driver.wait(until.elementLocated(locator), waitTimeout)
+    var webelement = await this.driver.wait(until.elementLocated(locator), waitTimeout)
+    return webelement
 };
 
-Waiter.prototype.waitUntilVisible =async function (locator, timeout) {
+Waiter.prototype.waitUntilVisible =async function (webelement, timeout) {
     var waitTimeout = timeout || globalTimeout;
-    return await this.driver.wait(until.elementIsVisible(this.driver.findElement(locator)), waitTimeout)
+    await this.driver.wait(until.elementIsVisible(webelement), waitTimeout)
 };
 
-Waiter.prototype.waitUntilNotVisible = function (locator, timeout) {
+Waiter.prototype.waitUntilNotVisible = async function (webelement, timeout) {
     var waitTimeout = timeout || globalTimeout;
-    return this.driver.wait(until.elementIsNotVisible(this.driver.findElement(locator)), waitTimeout)
-};
-
-Waiter.prototype.waitUntilElemNotVisible = function (elem, timeout) {
-    var waitTimeout = timeout || globalTimeout;
-    return this.driver.wait(until.elementIsNotVisible(elem), waitTimeout)
+    await this.driver.wait(until.elementIsNotVisible(webelement), waitTimeout)
 };
 
 Waiter.prototype.findElement =async function (locator) {

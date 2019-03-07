@@ -50,7 +50,7 @@ if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_
     rp.startTestLaunch(test_name, `Results for ${test_name}`)
 } else if (rp_conf && (!rp_conf['rp_host'] || !rp_conf['rp_token'] || !rp_conf['rp_project_name'])) {
     console.log("Some Report Portal config values don't set\n")
-    console.log(`Your config:\n ${rp_conf}`)
+    console.log(`Your config:\n ${JSON.stringify(rp_conf)}`)
 }
 
 var ScenarioBuilder = new Scenario(test_name, influx_conf, rp, lighthouseDeviceType)

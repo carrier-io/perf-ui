@@ -117,6 +117,9 @@ Demo:                                         # Test Suite
       - check:                                        # Check Action (check page state or WebElement state)
           xpath: //button[@value='Search']              # locator for WebElement (You can use "xpath" or "css" type of locators)
 
+      - checkIsNot:                                     # Check Element is Not Visible Action (check page state or WebElement state)
+          xpath: //button[@value='Search']              # locator for WebElement (You can use "xpath" or "css" type of locators)
+
       - click:                                        # Click Action (Click specified WebElement)
           xpath: //button[@value='Search']              # locator for WebElement (You can use "xpath" or "css" type of locators)
 
