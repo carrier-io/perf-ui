@@ -119,6 +119,7 @@ ScenarioBuilder.prototype.execList = async function (driver,scenarioIter, baseUr
                 locator = By.css(actionStep[2])
             }
             value = actionStep[3]
+            await driver.findElement(locator).clear()
             await driver.findElement(locator).sendKeys(value)
         }
         if (actionStep[0] == 'check'){
