@@ -134,7 +134,7 @@ ReportPortal.prototype.reportIssue =async function (error, domain, url_path, pag
             }
         })
         .then(() => outer_this.sendTestLog(step, 'WARN', `Page name: ${page_name}`))
-        .finally(() => outer_this.finishItem(step.tempId, 'failed'))
+        .then(() => outer_this.finishItem(step.tempId, 'failed'))
 
 
     return new Promise(function (resolve, reject) {
@@ -168,7 +168,7 @@ ReportPortal.prototype.reportResult =async function (page_name, url, path, drive
                 outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name_desktop}.html`, "text/xml", `Lighthouse result: ${lh_name_desktop}.html`) 
             }
         })
-        .finally(() => outer_this.finishItem(step.tempId, 'passed'))
+        .then(() => outer_this.finishItem(step.tempId, 'passed'))
 
 }
 
