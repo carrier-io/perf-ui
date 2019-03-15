@@ -53,7 +53,7 @@ if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_
     console.log(`Your config:\n ${JSON.stringify(rp_conf)}`)
 }
 
-var ScenarioBuilder = new Scenario(test_name, influx_conf, rp, lighthouseDeviceType)
+var ScenarioBuilder = new Scenario(test_name, influx_conf, rp, lighthouseDeviceType, env)
 
 async function run() {
     for (var j = 1; j <= times; j++) {

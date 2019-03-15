@@ -19,7 +19,7 @@ var UIPerformanceClient = require('./ui_perf_client');
 var Lighthouse = require('./lighthouse');
 var utils = require('./utils')
 
-function Logger(influx_conf, scenario, triger) {
+function Logger(influx_conf, scenario, triger, suite) {
 
     this.triger = triger;
     if (triger){
@@ -31,7 +31,9 @@ function Logger(influx_conf, scenario, triger) {
     }
     this.perf_client = new UIPerformanceClient();
     this.scenario = scenario;
-    
+    this.build_id = scenario + "_" + Date.now();
+    this.start_time = Date.now();
+    this.suite = suite;
 }
 
 Logger.prototype.logInfo = async function (driver, pageName, status, isAlert = false) {
@@ -109,7 +111,10 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
                 page: pageName,
                 scenario: outer_this.scenario,
                 domain: diff.domain,
-                status: status
+                status: status,
+                build_id: outer_this.build_id,
+                start_time: outer_this.start_time,
+                suite: outer_this.suite
             }];
 
             datacell = {
@@ -136,6 +141,7 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
                 datacell['encodedBodySize'] = diff.encodedBodySize;
                 datacell['decodedBodySize'] = diff.decodedBodySize;
             }
+
             data = data.concat(datacell);
             if (outer_this.client != undefined || outer_this.client != null){
                 outer_this.client.write(data[0]).tag(data[1]).field(data[2]).queue();

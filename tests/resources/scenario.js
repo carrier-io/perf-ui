@@ -47,7 +47,7 @@ var JUnitBuilder = require('./junit_reporter')
 var lightHouseArr
 var trigger
 
-function ScenarioBuilder(test_name, influx_conf, rp, lightHouseDevice) {
+function ScenarioBuilder(test_name, influx_conf, rp, lightHouseDevice, suite) {
     this.testName = test_name.replace(/\.y.?ml/g, '')
     if (influx_conf && influx_conf['url'] != null) {
         trigger = true;
@@ -55,7 +55,7 @@ function ScenarioBuilder(test_name, influx_conf, rp, lightHouseDevice) {
     else {
         trigger = false;
     }
-    this.logger = new Logger(influx_conf, this.testName, trigger)
+    this.logger = new Logger(influx_conf, this.testName, trigger, suite)
     if (rp) {
         this.rp = rp
     }
