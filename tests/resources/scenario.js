@@ -39,13 +39,14 @@ const switchToDefault = 'switchToDefault'
 var Waiter = require("./waiters")
 var Lighthouse = require('./lighthouse')
 var Logger = require('./logger')
-const {
-    format
-} = require('util')
+const { format } = require('util')
 var utils = require('./utils')
 var JUnitBuilder = require('./junit_reporter')
+var request = require('request-promise').defaults({ jar: true });
+var tough = require('tough-cookie');
 var lightHouseArr
 var trigger
+var sesionCookie
 
 function ScenarioBuilder(test_name, influx_conf, rp, lightHouseDevice, suite) {
     this.testName = test_name.replace(/\.y.?ml/g, '')
@@ -89,50 +90,50 @@ ScenarioBuilder.prototype.testStep_v1 = async function (driver, page_name, baseU
     var status = 'ok';
     var outer_this = this;
     await driver.sleep(200)
-                    .then(()=>{console.log("\nOpening %s TestCase (%d)", page_name, iteration)})
-                    .then(() => outer_this.execList(driver, scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl))
-                    .catch((error) => outer_this.errorHandler(driver, page_name, error, baseUrl, parameters, lh_name, status))
-                    .then((status) => outer_this.analyseAndReportResult(driver, page_name, baseUrl, parameters, lh_name, status))
+        .then(() => { console.log("\nOpening %s TestCase (%d)", page_name, iteration) })
+        .then(() => outer_this.execList(driver, scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl))
+        .catch((error) => outer_this.errorHandler(driver, page_name, error, baseUrl, parameters, lh_name, status))
+        .then((status) => outer_this.analyseAndReportResult(driver, page_name, baseUrl, parameters, lh_name, status))
 }
 
-ScenarioBuilder.prototype.execList = async function (driver,scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl) {
+ScenarioBuilder.prototype.execList = async function (driver, scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl) {
 
     var outer_this = this;
     var locator;
     var actionStep;
 
-    if (scenarioIter == 0 || targetUrl!=baseUrl){
+    if (scenarioIter == 0 || targetUrl != baseUrl) {
         await driver.get(baseUrl)
     }
 
 
-    for(let step in stepList){
+    for (let step in stepList) {
         actionStep = stepList[step]
-        if (actionStep == undefined || actionStep == null){
+        if (actionStep == undefined || actionStep == null) {
             continue;
         }
-        if (actionStep[0] == 'input'){
-            if (actionStep[1]== 'xpath'){
+        if (actionStep[0] == 'input') {
+            if (actionStep[1] == 'xpath') {
                 locator = By.xpath(actionStep[2])
             }
-            else{
+            else {
                 locator = By.css(actionStep[2])
             }
             value = actionStep[3]
             await driver.findElement(locator).clear()
             await driver.findElement(locator).sendKeys(value)
         }
-        if (actionStep[0] == 'check'){
-            if (actionStep[1]== 'xpath'){
+        if (actionStep[0] == 'check') {
+            if (actionStep[1] == 'xpath') {
                 locator = By.xpath(actionStep[2])
             }
-            else{
+            else {
                 locator = By.css(actionStep[2])
             }
-            await waiter.waitFor(locator).then((element)=> waiter.waitUntilVisible(element))
+            await waiter.waitFor(locator).then((element) => waiter.waitUntilVisible(element))
         }
-        if (actionStep[0] == 'checkIsNot'){
-            if (actionStep[1]== 'xpath'){
+        if (actionStep[0] == 'checkIsNot') {
+            if (actionStep[1] == 'xpath') {
                 locator = By.xpath(actionStep[2])
             }
             else {
@@ -140,11 +141,11 @@ ScenarioBuilder.prototype.execList = async function (driver,scenarioIter, baseUr
             }
             await waiter.waitFor(locator).then((element) => waiter.waitUntilNotVisible(element))
         }
-        if (actionStep[0] == 'click'){
-            if (actionStep[1]== 'xpath'){
+        if (actionStep[0] == 'click') {
+            if (actionStep[1] == 'xpath') {
                 locator = By.xpath(actionStep[2])
             }
-            else{
+            else {
                 locator = By.css(actionStep[2])
             }
             await driver.findElement(locator).click()
@@ -166,7 +167,7 @@ ScenarioBuilder.prototype.execList = async function (driver,scenarioIter, baseUr
                 await driver.switchTo().defaultContent()
             }
         }
-        if (actionStep[0] == 'url'){
+        if (actionStep[0] == 'url') {
             await driver.get(actionStep[1])
             await driver.sleep(1000)
         }
@@ -177,18 +178,19 @@ ScenarioBuilder.prototype.execList = async function (driver,scenarioIter, baseUr
         } else {
             locator = By.css(pageCheck['css'])
         }
-        await waiter.waitFor(locator).then((element)=> waiter.waitUntilVisible(element))        
+        await waiter.waitFor(locator).then((element) => waiter.waitUntilVisible(element))
     }
+    sesionCookie = await driver.manage().getCookies();
     await driver.sleep(2000)
 }
 
-ScenarioBuilder.prototype.errorHandler =async function (driver, page_name, error, pageUrl, param, lh_name, status) {
+ScenarioBuilder.prototype.errorHandler = async function (driver, page_name, error, pageUrl, param, lh_name, status) {
     console.log(`Test Case ${page_name} failed.`)
     status = 'ko';
     var outer_this = this;
 
     await utils.takeScreenshot(driver, `${page_name}_Failed`)
-    
+
     if (outer_this.logger) {
         await outer_this.logger.logError(error, pageUrl, page_name, param)
     }
@@ -209,7 +211,7 @@ ScenarioBuilder.prototype.errorHandler =async function (driver, page_name, error
 
     return status
 }
-ScenarioBuilder.prototype.analyseAndReportResult =async function (driver, page_name, pageUrl, param, lh_name, status) {
+ScenarioBuilder.prototype.analyseAndReportResult = async function (driver, page_name, pageUrl, param, lh_name, status) {
     var outer_this = this;
 
     console.log(`Starting Analyse ${page_name}.`)
@@ -219,7 +221,7 @@ ScenarioBuilder.prototype.analyseAndReportResult =async function (driver, page_n
     if (status != 'ko') {
         utils.takeScreenshot(driver, page_name)
     }
-   
+
     var isAction = await outer_this.logger.logInfo(driver, page_name, status)
     await driver.executeScript('performance.clearResourceTimings()');
     if (status != 'ko' && !isAction) {
@@ -266,6 +268,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
     var scenarioIter = 0;
     var baseUrl
     var targetUrl
+    var cookieJar = request.jar();
 
     try {
         console.log(`${test_name} test, iteration ${iteration}`)
@@ -277,98 +280,274 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
             var pageUrlWithParameters
             var pageCheck
 
-            if (page['url'] != null || page['url'] != undefined) {
-                baseUrl = page['url']
-            }
-            if (page['check'] != null || page['check']) {
-                pageCheck = page['check']
-            } else {
-                pageCheck = null;
-            }
-
-            if (page[testSteps] != null || page[testSteps] != undefined) {
-                for (i = 0; i < page[testSteps].length; i++) {
-                    if (page[testSteps][i][testUrl]) {
-                        var url = page[testSteps][i][testUrl]
-                        stepList[i] = [testUrl, url]
-                    }
-                    if (page[testSteps][i][testInput]) {
-                        var inputStep = page[testSteps][i][testInput]
-                        if (inputStep[locatorXpath]) {
-                            stepList[i] = [testInput, locatorXpath, inputStep[locatorXpath], inputStep[inputValue]]
+            if (page['method']) {
+                switch (page['method']) {
+                    case 'GET':
+                    case 'HEAD':
+                        var callParamPair = page['parameters']
+                        var callBodyPair = page['body']
+                        var getOption = {
+                            method: page['method'],
+                            headers: page['headers'],
+                            json: true,
+                            time: true,
+                            resolveWithFullResponse: true
                         }
-                        if (inputStep[locatorCss]) {
-                            stepList[i] = [testInput, locatorCss, inputStep[locatorCss], inputStep[inputValue]]
+                        var path = page['path'] || '/'
+                        getOption.uri = page['url'] + path
+                        if (sesionCookie != null || sesionCookie != undefined){
+                            for (let cookie in sesionCookie){
+                                var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
+                                cookieJar.setCookie(cookieToAdd, page['url'])
+                            }
+                            getOption.jar = cookieJar
                         }
-                    }
-                    if (page[testSteps][i][testCheckNotPresent]){
-                        var inputStep = page[testSteps][i][testCheckNotPresent]
-                        if (inputStep[locatorXpath]){
-                            stepList[i] = [testCheckNotPresent,locatorXpath, inputStep[locatorXpath]]
+                        if (callParamPair != undefined || callBodyPair != undefined) {
+                            for (let parameter in callParamPair) {
+                                console.log("\nSend %s Request (%d)", page_name, iteration)
+                                getOption.qs = callParamPair[parameter]
+                                await request(getOption)
+                                    .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
+                                    .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                                await utils.sleep(1)
+                            }
+                            for (let reqbody in callBodyPair) {
+                                console.log("\nSend %s Request (%d)", page_name, iteration)
+                                getOption.headers.body = callBodyPair[reqbody]
+                                await request(getOption)
+                                    .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
+                                    .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                                await utils.sleep(1)
+                            }
                         }
-                        if (inputStep[locatorCss]){
-                            stepList[i] = [testCheckNotPresent,locatorCss, inputStep[locatorCss]]
+                        else {
+                            console.log("\nSend %s Request (%d)", page_name, iteration)
+                            await request(getOption)
+                                .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
+                                .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                            await utils.sleep(1)
                         }
-                    }
-                    if (page[testSteps][i][testClick]) {
-                        stepClick = page[testSteps][i][testClick]
-                        if (stepClick[locatorXpath]) {
-                            stepList[i] = [testClick, locatorXpath, stepClick[locatorXpath]]
+                        break;
+                    case 'POST':
+                        var callBodyPair = page['body']
+                        var callFormPair = page['form']
+                        var postOption = {
+                            method: 'POST',
+                            headers: page['headers'],
+                            json: true,
+                            time: true,
+                            resolveWithFullResponse: true
                         }
-                        if (stepClick[locatorCss]) {
-                            stepList[i] = [testClick, locatorCss, stepClick[locatorCss]]
+                        var path = page['path'] || '/'
+                        postOption.uri = page['url'] + path
+                        if (sesionCookie != null || sesionCookie != undefined){
+                            for (let cookie in sesionCookie){
+                                var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
+                                cookieJar.setCookie(cookieToAdd, page['url'])
+                            }
+                            getOption.jar = cookieJar
                         }
-                    }
-                    if (page[testSteps][i][testCheck]) {
-                        stepCheck = page[testSteps][i][testCheck]
-                        if (stepCheck[locatorXpath]) {
-                            stepList[i] = [testCheck, locatorXpath, stepCheck[locatorXpath]]
+                        for (let reqbody in callBodyPair) {
+                            console.log("\nSend %s Request (%d)", page_name, iteration)
+                            postOption.body = callBodyPair[reqbody]
+                            await request(postOption)
+                                .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
+                                .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                            await utils.sleep(1)
                         }
-                        if (stepCheck[locatorCss]) {
-                            stepList[i] = [testCheck, locatorCss, stepCheck[locatorCss]]
+                        for (let xform in callFormPair) {
+                            console.log("\nSend %s Request (%d)", page_name, iteration)
+                            postOption.form = callFormPair[xform]
+                            await request(postOption)
+                                .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
+                                .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                            await utils.sleep(1)
                         }
-                    }
-                    if (page[testSteps][i][switchToFrame]) {
-                        stepSwitch = page[testSteps][i][switchToFrame]
-                        if (stepSwitch[locatorId]) {
-                            stepList[i] = [switchToFrame, locatorId, stepSwitch[locatorId]]
+                        break;
+                    case 'PUT':
+                        var callBodyPair = page['body']
+                        var callFormPair = page['form']
+                        var putOption = {
+                            method: 'PUT',
+                            headers: page['headers'],
+                            json: true,
+                            time: true,
+                            resolveWithFullResponse: true
                         }
-                        if (stepSwitch[locatorXpath]) {
-                            stepList[i] = [switchToFrame, locatorXpath, stepSwitch[locatorXpath]]
+                        var path = page['path'] || '/'
+                        putOption.uri = page['url'] + path
+                        if (sesionCookie != null || sesionCookie != undefined){
+                            for (let cookie in sesionCookie){
+                                var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
+                                cookieJar.setCookie(cookieToAdd, page['url'])
+                            }
+                            getOption.jar = cookieJar
                         }
-                        if (stepSwitch[locatorCss]) {
-                            stepList[i] = [switchToFrame, locatorCss, stepSwitch[locatorCss]]
+                        for (let reqbody in callBodyPair) {
+                            console.log("\nSend %s Request (%d)", page_name, iteration)
+                            putOption.body = callBodyPair[reqbody]
+                            await request(putOption)
+                                .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
+                                .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                            await utils.sleep(1)
                         }
-                    }
-                    if (page[testSteps][i][switchToDefault]) {
-                        stepSwitch = page[testSteps][i][switchToDefault]
-                        stepList[i] = [switchToDefault, true]
-                    }
+                        for (let xform in callFormPair) {
+                            console.log("\nSend %s Request (%d)", page_name, iteration)
+                            putOption.form = callFormPair[xform]
+                            await request(putOption)
+                                .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
+                                .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                            await utils.sleep(1)
+                        }
+                        break;
+                    case 'DELETE':
+                        var callBodyPair = page['body']
+                        var callFormPair = page['form']
+                        var deleteOption = {
+                            method: 'DELETE',
+                            headers: page['headers'],
+                            json: true,
+                            time: true,
+                            resolveWithFullResponse: true
+                        }
+                        var path = page['path'] || '/'
+                        deleteOption.uri = page['url'] + path
+                        if (sesionCookie != null || sesionCookie != undefined){
+                            for (let cookie in sesionCookie){
+                                var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
+                                cookieJar.setCookie(cookieToAdd, page['url'])
+                            }
+                            getOption.jar = cookieJar
+                        }
+                        console.log("\nSend %s Request (%d)", page_name, iteration)
+                        await request(deleteOption)
+                            .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
+                            .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                        await utils.sleep(1)
+                        break;
+                    case 'OPTIONS':
+                        var optionsOption = {
+                            method: 'OPTIONS',
+                            headers: page['headers'],
+                            json: true,
+                            time: true,
+                            resolveWithFullResponse: true
+                        }
+                        var path = page['path'] || '/'
+                        optionsOption.uri = page['url'] + path
+                        if (sesionCookie != null || sesionCookie != undefined){
+                            for (let cookie in sesionCookie){
+                                var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
+                                cookieJar.setCookie(cookieToAdd, page['url'])
+                            }
+                            getOption.jar = cookieJar
+                        }
+                        console.log("\nSend %s Request (%d)", page_name, iteration)
+                        await request(optionsOption)
+                            .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
+                            .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                        await utils.sleep(1)
+                        break;
+                    default:
+                        break;
                 }
-            }
-            if (parameters != null || parameters != undefined) {
-                if (parameters.length > 1) {
-                    var paramIterator = 1
-                    for (let parameter of parameters) {
-                        pageUrlWithParameters = baseUrl + parameter
-                        pageNameWithParameter = page_name + "_" + paramIterator
-                        await outer_this.testStep_v1(driver, pageNameWithParameter, pageUrlWithParameters, parameter, pageCheck, stepList, waiter, iteration, scenarioIter, targetUrl)
-                        paramIterator += 1
-                    }
-
-                } else {
-                    var pageUrlWithParameters = baseUrl + parameters
-                    await outer_this.testStep_v1(driver, page_name, pageUrlWithParameters, parameters, pageCheck, stepList, waiter, iteration, scenarioIter, targetUrl)
-                }
+                await utils.sleep(1)
             }
             else {
-                await outer_this.testStep_v1(driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, iteration, scenarioIter, targetUrl)
+
+                if (page['url'] != null || page['url'] != undefined) {
+                    baseUrl = page['url']
+                }
+                if (page['check'] != null || page['check']) {
+                    pageCheck = page['check']
+                } else {
+                    pageCheck = null;
+                }
+                if (page[testSteps] != null || page[testSteps] != undefined) {
+                    for (i = 0; i < page[testSteps].length; i++) {
+                        if (page[testSteps][i][testUrl]) {
+                            var url = page[testSteps][i][testUrl]
+                            stepList[i] = [testUrl, url]
+                        }
+                        if (page[testSteps][i][testInput]) {
+                            var inputStep = page[testSteps][i][testInput]
+                            if (inputStep[locatorXpath]) {
+                                stepList[i] = [testInput, locatorXpath, inputStep[locatorXpath], inputStep[inputValue]]
+                            }
+                            if (inputStep[locatorCss]) {
+                                stepList[i] = [testInput, locatorCss, inputStep[locatorCss], inputStep[inputValue]]
+                            }
+                        }
+                        if (page[testSteps][i][testCheckNotPresent]) {
+                            var inputStep = page[testSteps][i][testCheckNotPresent]
+                            if (inputStep[locatorXpath]) {
+                                stepList[i] = [testCheckNotPresent, locatorXpath, inputStep[locatorXpath]]
+                            }
+                            if (inputStep[locatorCss]) {
+                                stepList[i] = [testCheckNotPresent, locatorCss, inputStep[locatorCss]]
+                            }
+                        }
+                        if (page[testSteps][i][testClick]) {
+                            stepClick = page[testSteps][i][testClick]
+                            if (stepClick[locatorXpath]) {
+                                stepList[i] = [testClick, locatorXpath, stepClick[locatorXpath]]
+                            }
+                            if (stepClick[locatorCss]) {
+                                stepList[i] = [testClick, locatorCss, stepClick[locatorCss]]
+                            }
+                        }
+                        if (page[testSteps][i][testCheck]) {
+                            stepCheck = page[testSteps][i][testCheck]
+                            if (stepCheck[locatorXpath]) {
+                                stepList[i] = [testCheck, locatorXpath, stepCheck[locatorXpath]]
+                            }
+                            if (stepCheck[locatorCss]) {
+                                stepList[i] = [testCheck, locatorCss, stepCheck[locatorCss]]
+                            }
+                        }
+                        if (page[testSteps][i][switchToFrame]) {
+                            stepSwitch = page[testSteps][i][switchToFrame]
+                            if (stepSwitch[locatorId]) {
+                                stepList[i] = [switchToFrame, locatorId, stepSwitch[locatorId]]
+                            }
+                            if (stepSwitch[locatorXpath]) {
+                                stepList[i] = [switchToFrame, locatorXpath, stepSwitch[locatorXpath]]
+                            }
+                            if (stepSwitch[locatorCss]) {
+                                stepList[i] = [switchToFrame, locatorCss, stepSwitch[locatorCss]]
+                            }
+                        }
+                        if (page[testSteps][i][switchToDefault]) {
+                            stepSwitch = page[testSteps][i][switchToDefault]
+                            stepList[i] = [switchToDefault, true]
+                        }
+                    }
+                }
+                if (parameters != null || parameters != undefined) {
+                    if (parameters.length > 1) {
+                        var paramIterator = 1
+                        for (let parameter of parameters) {
+                            pageUrlWithParameters = baseUrl + parameter
+                            pageNameWithParameter = page_name + "_" + paramIterator
+                            await outer_this.testStep_v1(driver, pageNameWithParameter, pageUrlWithParameters, parameter, pageCheck, stepList, waiter, iteration, scenarioIter, targetUrl)
+                            paramIterator += 1
+                        }
+
+                    } else {
+                        var pageUrlWithParameters = baseUrl + parameters
+                        await outer_this.testStep_v1(driver, page_name, pageUrlWithParameters, parameters, pageCheck, stepList, waiter, iteration, scenarioIter, targetUrl)
+                    }
+                }
+                else {
+                    await outer_this.testStep_v1(driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, iteration, scenarioIter, targetUrl)
+                }
+                await utils.sleep(3)
+                scenarioIter += 1
+                targetUrl = baseUrl
             }
-            await utils.sleep(3)
-            scenarioIter+= 1
-            targetUrl = baseUrl
         }
     } catch (error) {
+        console.log(error)
         outer_this.junit.errorCase(error)
     } finally {
         if (iteration == (times)) {
