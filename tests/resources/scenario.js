@@ -189,8 +189,9 @@ ScenarioBuilder.prototype.errorHandler = async function (driver, page_name, erro
     status = 'ko';
     var outer_this = this;
 
-    await utils.takeScreenshot(driver, `${page_name}_Failed`)
-
+    if (!outer_this.logger && !outer_this.rp) {
+        await utils.takeScreenshot(driver, `${page_name}_Failed`)
+    }
     if (outer_this.logger) {
         await outer_this.logger.logError(error, pageUrl, page_name, param)
     }
@@ -218,8 +219,8 @@ ScenarioBuilder.prototype.analyseAndReportResult = async function (driver, page_
     if (status == null || status == undefined) {
         status = 'ok'
     }
-    if (status != 'ko') {
-        utils.takeScreenshot(driver, page_name)
+    if (!outer_this.logger && !outer_this.rp && status != 'ko') {
+        await utils.takeScreenshot(driver, page_name)
     }
 
     var isAction = await outer_this.logger.logInfo(driver, page_name, status)
