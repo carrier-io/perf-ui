@@ -293,24 +293,54 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                                 console.log("\nSend %s Request (%d)", page_name, iteration)
                                 getOption.qs = callParamPair[parameter]
                                 await request(getOption)
-                                    .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
-                                    .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                                    .then((res) => {
+                                        outer_this.logger.apiCallSuccess(res, page_name)
+                                        if (outer_this.rp) {
+                                            outer_this.rp.successCall(res, page_name)
+                                        }
+                                    })
+                                    .catch((err) => {
+                                        outer_this.logger.apiCallFail(err, page_name)
+                                        if (outer_this.rp) {
+                                            outer_this.rp.failedCall(err, page_name)
+                                        }
+                                    })
                                 await utils.sleep(1)
                             }
                             for (let reqbody in callBodyPair) {
                                 console.log("\nSend %s Request (%d)", page_name, iteration)
                                 getOption.headers.body = callBodyPair[reqbody]
                                 await request(getOption)
-                                    .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
-                                    .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                                    .then((res) => {
+                                        outer_this.logger.apiCallSuccess(res, page_name)
+                                        if (outer_this.rp) {
+                                            outer_this.rp.successCall(res, page_name)
+                                        }
+                                    })
+                                    .catch((err) => {
+                                        outer_this.logger.apiCallFail(err, page_name)
+                                        if (outer_this.rp) {
+                                            outer_this.rp.failedCall(err, page_name)
+                                        }
+                                    })
                                 await utils.sleep(1)
                             }
                         }
                         else {
                             console.log("\nSend %s Request (%d)", page_name, iteration)
                             await request(getOption)
-                                .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
-                                .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                                .then((res) => {
+                                    outer_this.logger.apiCallSuccess(res, page_name)
+                                    if (outer_this.rp) {
+                                        outer_this.rp.successCall(res, page_name)
+                                    }
+                                })
+                                .catch((err) => {
+                                    outer_this.logger.apiCallFail(err, page_name)
+                                    if (outer_this.rp) {
+                                        outer_this.rp.failedCall(err, page_name)
+                                    }
+                                })
                             await utils.sleep(1)
                         }
                         break;
@@ -337,16 +367,36 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                             console.log("\nSend %s Request (%d)", page_name, iteration)
                             postOption.body = callBodyPair[reqbody]
                             await request(postOption)
-                                .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
-                                .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                                .then((res) => {
+                                    outer_this.logger.apiCallSuccess(res, page_name)
+                                    if (outer_this.rp) {
+                                        outer_this.rp.successCall(res, page_name)
+                                    }
+                                })
+                                .catch((err) => {
+                                    outer_this.logger.apiCallFail(err, page_name)
+                                    if (outer_this.rp) {
+                                        outer_this.rp.failedCall(err, page_name)
+                                    }
+                                })
                             await utils.sleep(1)
                         }
                         for (let xform in callFormPair) {
                             console.log("\nSend %s Request (%d)", page_name, iteration)
                             postOption.form = callFormPair[xform]
                             await request(postOption)
-                                .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
-                                .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                                .then((res) => {
+                                    outer_this.logger.apiCallSuccess(res, page_name)
+                                    if (outer_this.rp) {
+                                        outer_this.rp.successCall(res, page_name)
+                                    }
+                                })
+                                .catch((err) => {
+                                    outer_this.logger.apiCallFail(err, page_name)
+                                    if (outer_this.rp) {
+                                        outer_this.rp.failedCall(err, page_name)
+                                    }
+                                })
                             await utils.sleep(1)
                         }
                         break;
@@ -373,16 +423,36 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                             console.log("\nSend %s Request (%d)", page_name, iteration)
                             putOption.body = callBodyPair[reqbody]
                             await request(putOption)
-                                .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
-                                .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                                .then((res) => {
+                                    outer_this.logger.apiCallSuccess(res, page_name)
+                                    if (outer_this.rp) {
+                                        outer_this.rp.successCall(res, page_name)
+                                    }
+                                })
+                                .catch((err) => {
+                                    outer_this.logger.apiCallFail(err, page_name)
+                                    if (outer_this.rp) {
+                                        outer_this.rp.failedCall(err, page_name)
+                                    }
+                                })
                             await utils.sleep(1)
                         }
                         for (let xform in callFormPair) {
                             console.log("\nSend %s Request (%d)", page_name, iteration)
                             putOption.form = callFormPair[xform]
                             await request(putOption)
-                                .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
-                                .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                                .then((res) => {
+                                    outer_this.logger.apiCallSuccess(res, page_name)
+                                    if (outer_this.rp) {
+                                        outer_this.rp.successCall(res, page_name)
+                                    }
+                                })
+                                .catch((err) => {
+                                    outer_this.logger.apiCallFail(err, page_name)
+                                    if (outer_this.rp) {
+                                        outer_this.rp.failedCall(err, page_name)
+                                    }
+                                })
                             await utils.sleep(1)
                         }
                         break;
@@ -407,8 +477,18 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         }
                         console.log("\nSend %s Request (%d)", page_name, iteration)
                         await request(deleteOption)
-                            .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
-                            .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                            .then((res) => {
+                                outer_this.logger.apiCallSuccess(res, page_name)
+                                if (outer_this.rp) {
+                                    outer_this.rp.successCall(res, page_name)
+                                }
+                            })
+                            .catch((err) => {
+                                outer_this.logger.apiCallFail(err, page_name)
+                                if (outer_this.rp) {
+                                    outer_this.rp.failedCall(err, page_name)
+                                }
+                            })
                         await utils.sleep(1)
                         break;
                     case 'OPTIONS':
@@ -430,8 +510,18 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         }
                         console.log("\nSend %s Request (%d)", page_name, iteration)
                         await request(optionsOption)
-                            .then((res) => outer_this.logger.apiCallSuccess(res, page_name))
-                            .catch((err) => outer_this.logger.apiCallFail(err, page_name))
+                            .then((res) => {
+                                outer_this.logger.apiCallSuccess(res, page_name)
+                                if (outer_this.rp) {
+                                    outer_this.rp.successCall(res, page_name)
+                                }
+                            })
+                            .catch((err) => {
+                                outer_this.logger.apiCallFail(err, page_name)
+                                if (outer_this.rp) {
+                                    outer_this.rp.failedCall(err, page_name)
+                                }
+                            })
                         await utils.sleep(1)
                         break;
                     default:
@@ -564,7 +654,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
             utils.sleep(5)
             console.info("Congrats, test is done.")
         }
-        if (driver){
+        if (driver) {
             driver.quit();
         }
     }
