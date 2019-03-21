@@ -247,25 +247,10 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
 
     var outer_this = this;
 
-    var driver = new Builder().withCapabilities(capabilities)
-        .setAlertBehavior('accept')
-        .forBrowser('chrome').build();
-    await driver.get("chrome://version");
-    let element = await driver.findElement(By.id('command_line'));
-    let text = await element.getText();
-    var splitStr = text.split(" ");
-    let port = 0
-    splitStr.filter(function (word, index) {
-        if (word.match(/--remote-debugging-port=*/)) {
-            port = Number(word.split('=')[1]);
-            lighthouse_opts.port = port;
-            lighthouse_opts_mobile.port = port;
-        } else { }
-    });
+    var driver
+    var waiter
 
     var test_name = outer_this.testName
-
-    var waiter = new Waiter(driver)
     var scenarioIter = 0;
     var baseUrl
     var targetUrl
@@ -296,8 +281,8 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         }
                         var path = page['path'] || '/'
                         getOption.uri = page['url'] + path
-                        if (sesionCookie != null || sesionCookie != undefined){
-                            for (let cookie in sesionCookie){
+                        if (sesionCookie != null || sesionCookie != undefined) {
+                            for (let cookie in sesionCookie) {
                                 var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
                                 cookieJar.setCookie(cookieToAdd, page['url'])
                             }
@@ -341,8 +326,8 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         }
                         var path = page['path'] || '/'
                         postOption.uri = page['url'] + path
-                        if (sesionCookie != null || sesionCookie != undefined){
-                            for (let cookie in sesionCookie){
+                        if (sesionCookie != null || sesionCookie != undefined) {
+                            for (let cookie in sesionCookie) {
                                 var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
                                 cookieJar.setCookie(cookieToAdd, page['url'])
                             }
@@ -377,8 +362,8 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         }
                         var path = page['path'] || '/'
                         putOption.uri = page['url'] + path
-                        if (sesionCookie != null || sesionCookie != undefined){
-                            for (let cookie in sesionCookie){
+                        if (sesionCookie != null || sesionCookie != undefined) {
+                            for (let cookie in sesionCookie) {
                                 var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
                                 cookieJar.setCookie(cookieToAdd, page['url'])
                             }
@@ -413,8 +398,8 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         }
                         var path = page['path'] || '/'
                         deleteOption.uri = page['url'] + path
-                        if (sesionCookie != null || sesionCookie != undefined){
-                            for (let cookie in sesionCookie){
+                        if (sesionCookie != null || sesionCookie != undefined) {
+                            for (let cookie in sesionCookie) {
                                 var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
                                 cookieJar.setCookie(cookieToAdd, page['url'])
                             }
@@ -436,8 +421,8 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         }
                         var path = page['path'] || '/'
                         optionsOption.uri = page['url'] + path
-                        if (sesionCookie != null || sesionCookie != undefined){
-                            for (let cookie in sesionCookie){
+                        if (sesionCookie != null || sesionCookie != undefined) {
+                            for (let cookie in sesionCookie) {
                                 var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
                                 cookieJar.setCookie(cookieToAdd, page['url'])
                             }
@@ -524,6 +509,26 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         }
                     }
                 }
+                if (driver == undefined || driver == null) {
+
+                    driver = new Builder().withCapabilities(capabilities)
+                        .setAlertBehavior('accept')
+                        .forBrowser('chrome').build();
+                    await driver.get("chrome://version");
+                    let element = await driver.findElement(By.id('command_line'));
+                    let text = await element.getText();
+                    var splitStr = text.split(" ");
+                    let port = 0
+                    splitStr.filter(function (word, index) {
+                        if (word.match(/--remote-debugging-port=*/)) {
+                            port = Number(word.split('=')[1]);
+                            lighthouse_opts.port = port;
+                            lighthouse_opts_mobile.port = port;
+                        } else { }
+                    });
+                    waiter = new Waiter(driver)
+                }
+
                 if (parameters != null || parameters != undefined) {
                     if (parameters.length > 1) {
                         var paramIterator = 1
@@ -559,7 +564,9 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
             utils.sleep(5)
             console.info("Congrats, test is done.")
         }
-        driver.quit();
+        if (driver){
+            driver.quit();
+        }
     }
 }
 
