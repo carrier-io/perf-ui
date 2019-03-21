@@ -295,12 +295,15 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                                 await request(getOption)
                                     .then((res) => {
                                         outer_this.logger.apiCallSuccess(res, page_name)
+                                        outer_this.junit.successCase(page_name)
                                         if (outer_this.rp) {
                                             outer_this.rp.successCall(res, page_name)
                                         }
                                     })
                                     .catch((err) => {
                                         outer_this.logger.apiCallFail(err, page_name)
+                                        var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
+                                        outer_this.junit.failCase(page_name, errorReason)
                                         if (outer_this.rp) {
                                             outer_this.rp.failedCall(err, page_name)
                                         }
@@ -313,12 +316,15 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                                 await request(getOption)
                                     .then((res) => {
                                         outer_this.logger.apiCallSuccess(res, page_name)
+                                        outer_this.junit.successCase(page_name)
                                         if (outer_this.rp) {
                                             outer_this.rp.successCall(res, page_name)
                                         }
                                     })
                                     .catch((err) => {
                                         outer_this.logger.apiCallFail(err, page_name)
+                                        var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
+                                        outer_this.junit.failCase(page_name, errorReason)
                                         if (outer_this.rp) {
                                             outer_this.rp.failedCall(err, page_name)
                                         }
@@ -331,12 +337,15 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                             await request(getOption)
                                 .then((res) => {
                                     outer_this.logger.apiCallSuccess(res, page_name)
+                                    outer_this.junit.successCase(page_name)
                                     if (outer_this.rp) {
                                         outer_this.rp.successCall(res, page_name)
                                     }
                                 })
                                 .catch((err) => {
                                     outer_this.logger.apiCallFail(err, page_name)
+                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
+                                    outer_this.junit.failCase(page_name, errorReason)
                                     if (outer_this.rp) {
                                         outer_this.rp.failedCall(err, page_name)
                                     }
@@ -369,12 +378,15 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                             await request(postOption)
                                 .then((res) => {
                                     outer_this.logger.apiCallSuccess(res, page_name)
+                                    outer_this.junit.successCase(page_name)
                                     if (outer_this.rp) {
                                         outer_this.rp.successCall(res, page_name)
                                     }
                                 })
                                 .catch((err) => {
                                     outer_this.logger.apiCallFail(err, page_name)
+                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
+                                    outer_this.junit.failCase(page_name, errorReason)
                                     if (outer_this.rp) {
                                         outer_this.rp.failedCall(err, page_name)
                                     }
@@ -387,12 +399,15 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                             await request(postOption)
                                 .then((res) => {
                                     outer_this.logger.apiCallSuccess(res, page_name)
+                                    outer_this.junit.successCase(page_name)
                                     if (outer_this.rp) {
                                         outer_this.rp.successCall(res, page_name)
                                     }
                                 })
                                 .catch((err) => {
                                     outer_this.logger.apiCallFail(err, page_name)
+                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
+                                    outer_this.junit.failCase(page_name, errorReason)
                                     if (outer_this.rp) {
                                         outer_this.rp.failedCall(err, page_name)
                                     }
@@ -425,12 +440,15 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                             await request(putOption)
                                 .then((res) => {
                                     outer_this.logger.apiCallSuccess(res, page_name)
+                                    outer_this.junit.successCase(page_name)
                                     if (outer_this.rp) {
                                         outer_this.rp.successCall(res, page_name)
                                     }
                                 })
                                 .catch((err) => {
                                     outer_this.logger.apiCallFail(err, page_name)
+                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
+                                    outer_this.junit.failCase(page_name, errorReason)
                                     if (outer_this.rp) {
                                         outer_this.rp.failedCall(err, page_name)
                                     }
@@ -443,12 +461,15 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                             await request(putOption)
                                 .then((res) => {
                                     outer_this.logger.apiCallSuccess(res, page_name)
+                                    outer_this.junit.successCase(page_name)
                                     if (outer_this.rp) {
                                         outer_this.rp.successCall(res, page_name)
                                     }
                                 })
                                 .catch((err) => {
                                     outer_this.logger.apiCallFail(err, page_name)
+                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
+                                    outer_this.junit.failCase(page_name, errorReason)
                                     if (outer_this.rp) {
                                         outer_this.rp.failedCall(err, page_name)
                                     }
@@ -479,12 +500,15 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         await request(deleteOption)
                             .then((res) => {
                                 outer_this.logger.apiCallSuccess(res, page_name)
+                                outer_this.junit.successCase(page_name)
                                 if (outer_this.rp) {
                                     outer_this.rp.successCall(res, page_name)
                                 }
                             })
                             .catch((err) => {
                                 outer_this.logger.apiCallFail(err, page_name)
+                                var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
+                                outer_this.junit.failCase(page_name, errorReason)
                                 if (outer_this.rp) {
                                     outer_this.rp.failedCall(err, page_name)
                                 }
@@ -512,12 +536,15 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         await request(optionsOption)
                             .then((res) => {
                                 outer_this.logger.apiCallSuccess(res, page_name)
+                                outer_this.junit.successCase(page_name)
                                 if (outer_this.rp) {
                                     outer_this.rp.successCall(res, page_name)
                                 }
                             })
                             .catch((err) => {
                                 outer_this.logger.apiCallFail(err, page_name)
+                                var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
+                                outer_this.junit.failCase(page_name, errorReason)
                                 if (outer_this.rp) {
                                     outer_this.rp.failedCall(err, page_name)
                                 }
