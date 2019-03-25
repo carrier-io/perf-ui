@@ -21,7 +21,9 @@ cookie = require('cookie-parse');
 
 function parseYmlFile(filepath) {
     try {
-        return yaml.safeLoad(fs.readFileSync(filepath, 'utf8'))
+        var parsedYaml = yaml.safeLoad(fs.readFileSync(filepath, 'utf8'))
+        console.log(JSON.stringify(parsedYaml))
+        return parsedYaml
     } catch (e) {
         console.log(e);
     }

@@ -74,7 +74,7 @@ ReportPortal.prototype.finishItem = function (item_id, status) {
     })
 }
 
-ReportPortal.prototype.sendTestLog = function (step, level, message) {
+ReportPortal.prototype.sendTestLog = async function (step, level, message) {
     var outer_this = this;
     outer_this.rpClient.sendLog(step.tempId, {
         level: level,
@@ -171,5 +171,31 @@ ReportPortal.prototype.reportResult =async function (page_name, url, path, drive
         .then(() => outer_this.finishItem(step.tempId, 'passed'))
 
 }
+ReportPortal.prototype.successCall = async function (res, page_name){
+    var outer_this = this;
+    var page_name = page_name.replace(/[^a-zA-Z0-9_]+/g, '_')
+    var step = outer_this.startItem(page_name, `Result for ${page_name}`, [page_name])
 
+    await outer_this.sendTestLog(step, 'INFO', `Request name: ${page_name}`)
+            .then(() => outer_this.sendTestLog(step, 'INFO', `Response Code: ${res.statusCode}`))
+            .then(() => outer_this.sendTestLog(step, 'INFO', `Response Message: ${res.statusMessage}`))
+            .then(() => outer_this.sendTestLog(step, 'INFO', `Response Time: ${res.elapsedTime} ms`))
+            .then(() => outer_this.finishItem(step.tempId, 'passed'))
+}
+ReportPortal.prototype.failedCall = async function (res, page_name){
+    var outer_this = this;
+    var page_name = page_name.replace(/[^a-zA-Z0-9_]+/g, '_')
+    var err_message = "Call " + page_name + " failed"
+    var step = outer_this.startItem(page_name, err_message, [page_name])
+    var errorMes = JSON.stringify(res.error)
+    if (errorMes != undefined || errorMes != null){
+        errorMes = errorMes.replace(/"/g, '\\"')
+    }
+
+    await outer_this.sendTestLog(step, 'ERROR', `Request name: ${page_name}`)
+            .then(() => outer_this.sendTestLog(step, 'ERROR', `Response Code: ${res.statusCode}`))
+            .then(() => outer_this.sendTestLog(step, 'WARN', `Response Message: ${errorMes}`))
+            .then(() => outer_this.sendTestLog(step, 'WARN', `Response Time: ${res.response.elapsedTime} ms`))
+            .then(() => outer_this.finishItem(step.tempId, 'failed'))
+}
 module.exports = ReportPortal;
