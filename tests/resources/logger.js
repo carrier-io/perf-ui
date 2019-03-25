@@ -153,6 +153,7 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
 };
 
 Logger.prototype.apiCallSuccess = function (call, callName){
+    console.log('ResponseCode: ' + call.statusCode)
     outer_this = this;
     var req = call.request
     var callField = {
@@ -186,9 +187,12 @@ Logger.prototype.apiCallSuccess = function (call, callName){
     outer_this.client.syncWrite().catch((error) => { console.log(error) });
 }
 Logger.prototype.apiCallFail = function (call, callName){
+    console.log('ResponseCode: ' + call.statusCode)
     outer_this = this;
     var errorMes = JSON.stringify(call.error)
-    errorMes = errorMes.replace(/"/g, '\\"')
+    if (errorMes != undefined || errorMes != null){
+        errorMes = errorMes.replace(/"/g, '\\"')
+    }
     var req = call.request
     var callField = {
         timingStart: call.response.timingStart,

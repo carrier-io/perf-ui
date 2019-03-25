@@ -127,6 +127,31 @@ Demo:                                         # Test Suite
           id: exampleIframe                             # locator for Frame (You can use "xpath","css","id" type of locators)
 
       - switchToDefault: true                         # Switch To Default Action (Switch to default content) 
+
+  DemoREST:                                     # Request
+
+        method: GET                                 # Request method (GET|POST|PUT|DELETE|HEAD|OPTION)
+        url: https://www.google.com                                # Call URL
+        path: /search                                              # URL path
+        headers:                                                   # Request headers
+            accept: text/html,application/xml
+            accept-encoding: gzip, deflate, br
+            accept-language: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7                                         
+        
+                                                    #OPTIONAL Parameters
+        parameters:                                                # Request query (for GET method)
+            - {q: "carrier-io", oq: "carrier-io"}                   
+            - {q: "gatling", oq: "gatling"}
+        
+        body:                                                       #Request body example for GET method
+            - Your body
+        
+        body:                                                       #Request body example for POST/PUT method
+            - {user: "test", pass: "pass"}
+
+        form:                                                       #Request for example for POST/PUT method
+            - {user: "test", pass: "pass"}
+
       
 ```
 

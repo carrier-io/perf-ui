@@ -188,7 +188,9 @@ ReportPortal.prototype.failedCall = async function (res, page_name){
     var err_message = "Call " + page_name + " failed"
     var step = outer_this.startItem(page_name, err_message, [page_name])
     var errorMes = JSON.stringify(res.error)
-    errorMes = errorMes.replace(/"/g, '\\"')
+    if (errorMes != undefined || errorMes != null){
+        errorMes = errorMes.replace(/"/g, '\\"')
+    }
 
     await outer_this.sendTestLog(step, 'ERROR', `Request name: ${page_name}`)
             .then(() => outer_this.sendTestLog(step, 'ERROR', `Response Code: ${res.statusCode}`))

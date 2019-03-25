@@ -284,8 +284,8 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         if (sesionCookie != null || sesionCookie != undefined) {
                             var cookieToAdd = ''
                             for (let cookie in sesionCookie) {
-                                var cookieBuilder = sesionCookie[cookie].name+"="+sesionCookie[cookie].value+";"
-                                cookieToAdd+= cookieBuilder
+                                var cookieBuilder = sesionCookie[cookie].name + "=" + sesionCookie[cookie].value + ";"
+                                cookieToAdd += cookieBuilder
                             }
                             getOption.headers.Cookie = cookieToAdd
                         }
@@ -357,9 +357,10 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                     case 'POST':
                         var callBodyPair = page['body']
                         var callFormPair = page['form']
+                        var postHeaders = page['headers'] || { perfui: "carrier-io"}
                         var postOption = {
                             method: 'POST',
-                            headers: page['headers'],
+                            headers: postHeaders,
                             json: true,
                             time: true,
                             resolveWithFullResponse: true
@@ -369,60 +370,61 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         if (sesionCookie != null || sesionCookie != undefined) {
                             var cookieToAdd = ''
                             for (let cookie in sesionCookie) {
-                                var cookieBuilder = sesionCookie[cookie].name+"="+sesionCookie[cookie].value+";"
-                                cookieToAdd+= cookieBuilder
+                                var cookieBuilder = sesionCookie[cookie].name + "=" + sesionCookie[cookie].value + ";"
+                                cookieToAdd += cookieBuilder
                             }
                             postOption.headers.Cookie = cookieToAdd
                         }
-                        for (let reqbody in callBodyPair) {
-                            console.log("\nSend %s Request (%d)", page_name, iteration)
-                            postOption.body = callBodyPair[reqbody]
-                            await request(postOption)
-                                .then((res) => {
-                                    outer_this.logger.apiCallSuccess(res, page_name)
-                                    outer_this.junit.successCase(page_name)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.successCall(res, page_name)
-                                    }
-                                })
-                                .catch((err) => {
-                                    outer_this.logger.apiCallFail(err, page_name)
-                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
-                                    outer_this.junit.failCase(page_name, errorReason)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.failedCall(err, page_name)
-                                    }
-                                })
-                            await utils.sleep(1)
-                        }
-                        for (let xform in callFormPair) {
-                            console.log("\nSend %s Request (%d)", page_name, iteration)
-                            postOption.form = callFormPair[xform]
-                            await request(postOption)
-                                .then((res) => {
-                                    outer_this.logger.apiCallSuccess(res, page_name)
-                                    outer_this.junit.successCase(page_name)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.successCall(res, page_name)
-                                    }
-                                })
-                                .catch((err) => {
-                                    outer_this.logger.apiCallFail(err, page_name)
-                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
-                                    outer_this.junit.failCase(page_name, errorReason)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.failedCall(err, page_name)
-                                    }
-                                })
-                            await utils.sleep(1)
-                        }
+                            for (let reqbody in callBodyPair) {
+                                console.log("\nSend %s Request (%d)", page_name, iteration)
+                                postOption.body = callBodyPair[reqbody]
+                                await request(postOption)
+                                    .then((res) => {
+                                        outer_this.logger.apiCallSuccess(res, page_name)
+                                        outer_this.junit.successCase(page_name)
+                                        if (outer_this.rp) {
+                                            outer_this.rp.successCall(res, page_name)
+                                        }
+                                    })
+                                    .catch((err) => {
+                                        outer_this.logger.apiCallFail(err, page_name)
+                                        var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
+                                        outer_this.junit.failCase(page_name, errorReason)
+                                        if (outer_this.rp) {
+                                            outer_this.rp.failedCall(err, page_name)
+                                        }
+                                    })
+                                await utils.sleep(1)
+                            }
+                            for (let xform in callFormPair) {
+                                console.log("\nSend %s Request (%d)", page_name, iteration)
+                                postOption.form = callFormPair[xform]
+                                await request(postOption)
+                                    .then((res) => {
+                                        outer_this.logger.apiCallSuccess(res, page_name)
+                                        outer_this.junit.successCase(page_name)
+                                        if (outer_this.rp) {
+                                            outer_this.rp.successCall(res, page_name)
+                                        }
+                                    })
+                                    .catch((err) => {
+                                        outer_this.logger.apiCallFail(err, page_name)
+                                        var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
+                                        outer_this.junit.failCase(page_name, errorReason)
+                                        if (outer_this.rp) {
+                                            outer_this.rp.failedCall(err, page_name)
+                                        }
+                                    })
+                                await utils.sleep(1)
+                            }
                         break;
                     case 'PUT':
                         var callBodyPair = page['body']
                         var callFormPair = page['form']
+                        var putHeaders = page['headers'] || { perfui: "carrier-io"}
                         var putOption = {
                             method: 'PUT',
-                            headers: page['headers'],
+                            headers: putHeaders,
                             json: true,
                             time: true,
                             resolveWithFullResponse: true
@@ -432,8 +434,8 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         if (sesionCookie != null || sesionCookie != undefined) {
                             var cookieToAdd = ''
                             for (let cookie in sesionCookie) {
-                                var cookieBuilder = sesionCookie[cookie].name+"="+sesionCookie[cookie].value+";"
-                                cookieToAdd+= cookieBuilder
+                                var cookieBuilder = sesionCookie[cookie].name + "=" + sesionCookie[cookie].value + ";"
+                                cookieToAdd += cookieBuilder
                             }
                             putOption.headers.Cookie = cookieToAdd
                         }
@@ -483,9 +485,10 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                     case 'DELETE':
                         var callBodyPair = page['body']
                         var callFormPair = page['form']
+                        var deleteHeaders = page['headers'] || { perfui: "carrier-io"}
                         var deleteOption = {
                             method: 'DELETE',
-                            headers: page['headers'],
+                            headers: deleteHeaders,
                             json: true,
                             time: true,
                             resolveWithFullResponse: true
@@ -495,8 +498,8 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         if (sesionCookie != null || sesionCookie != undefined) {
                             var cookieToAdd = ''
                             for (let cookie in sesionCookie) {
-                                var cookieBuilder = sesionCookie[cookie].name+"="+sesionCookie[cookie].value+";"
-                                cookieToAdd+= cookieBuilder
+                                var cookieBuilder = sesionCookie[cookie].name + "=" + sesionCookie[cookie].value + ";"
+                                cookieToAdd += cookieBuilder
                             }
                             deleteOption.headers.Cookie = cookieToAdd
                         }
@@ -520,9 +523,10 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         await utils.sleep(1)
                         break;
                     case 'OPTIONS':
+                        var optionHeaders = page['headers'] || { perfui: "carrier-io"}
                         var optionsOption = {
                             method: 'OPTIONS',
-                            headers: page['headers'],
+                            headers: optionHeaders,
                             json: true,
                             time: true,
                             resolveWithFullResponse: true
@@ -532,8 +536,8 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         if (sesionCookie != null || sesionCookie != undefined) {
                             var cookieToAdd = ''
                             for (let cookie in sesionCookie) {
-                                var cookieBuilder = sesionCookie[cookie].name+"="+sesionCookie[cookie].value+";"
-                                cookieToAdd+= cookieBuilder
+                                var cookieBuilder = sesionCookie[cookie].name + "=" + sesionCookie[cookie].value + ";"
+                                cookieToAdd += cookieBuilder
                             }
                             optionsOption.headers.Cookie = cookieToAdd
                         }
