@@ -282,11 +282,12 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         var path = page['path'] || '/'
                         getOption.uri = page['url'] + path
                         if (sesionCookie != null || sesionCookie != undefined) {
+                            var cookieToAdd = ''
                             for (let cookie in sesionCookie) {
-                                var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
-                                cookieJar.setCookie(cookieToAdd, page['url'])
+                                var cookieBuilder = sesionCookie[cookie].name+"="+sesionCookie[cookie].value+";"
+                                cookieToAdd+= cookieBuilder
                             }
-                            getOption.jar = cookieJar
+                            getOption.headers.Cookie = cookieToAdd
                         }
                         if (callParamPair != undefined || callBodyPair != undefined) {
                             for (let parameter in callParamPair) {
@@ -366,11 +367,12 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         var path = page['path'] || '/'
                         postOption.uri = page['url'] + path
                         if (sesionCookie != null || sesionCookie != undefined) {
+                            var cookieToAdd = ''
                             for (let cookie in sesionCookie) {
-                                var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
-                                cookieJar.setCookie(cookieToAdd, page['url'])
+                                var cookieBuilder = sesionCookie[cookie].name+"="+sesionCookie[cookie].value+";"
+                                cookieToAdd+= cookieBuilder
                             }
-                            getOption.jar = cookieJar
+                            postOption.headers.Cookie = cookieToAdd
                         }
                         for (let reqbody in callBodyPair) {
                             console.log("\nSend %s Request (%d)", page_name, iteration)
@@ -428,11 +430,12 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         var path = page['path'] || '/'
                         putOption.uri = page['url'] + path
                         if (sesionCookie != null || sesionCookie != undefined) {
+                            var cookieToAdd = ''
                             for (let cookie in sesionCookie) {
-                                var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
-                                cookieJar.setCookie(cookieToAdd, page['url'])
+                                var cookieBuilder = sesionCookie[cookie].name+"="+sesionCookie[cookie].value+";"
+                                cookieToAdd+= cookieBuilder
                             }
-                            getOption.jar = cookieJar
+                            putOption.headers.Cookie = cookieToAdd
                         }
                         for (let reqbody in callBodyPair) {
                             console.log("\nSend %s Request (%d)", page_name, iteration)
@@ -490,11 +493,12 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         var path = page['path'] || '/'
                         deleteOption.uri = page['url'] + path
                         if (sesionCookie != null || sesionCookie != undefined) {
+                            var cookieToAdd = ''
                             for (let cookie in sesionCookie) {
-                                var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
-                                cookieJar.setCookie(cookieToAdd, page['url'])
+                                var cookieBuilder = sesionCookie[cookie].name+"="+sesionCookie[cookie].value+";"
+                                cookieToAdd+= cookieBuilder
                             }
-                            getOption.jar = cookieJar
+                            deleteOption.headers.Cookie = cookieToAdd
                         }
                         console.log("\nSend %s Request (%d)", page_name, iteration)
                         await request(deleteOption)
@@ -526,11 +530,12 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         var path = page['path'] || '/'
                         optionsOption.uri = page['url'] + path
                         if (sesionCookie != null || sesionCookie != undefined) {
+                            var cookieToAdd = ''
                             for (let cookie in sesionCookie) {
-                                var cookieToAdd = new tough.Cookie(sesionCookie[cookie])
-                                cookieJar.setCookie(cookieToAdd, page['url'])
+                                var cookieBuilder = sesionCookie[cookie].name+"="+sesionCookie[cookie].value+";"
+                                cookieToAdd+= cookieBuilder
                             }
-                            getOption.jar = cookieJar
+                            optionsOption.headers.Cookie = cookieToAdd
                         }
                         console.log("\nSend %s Request (%d)", page_name, iteration)
                         await request(optionsOption)
