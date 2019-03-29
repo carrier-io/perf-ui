@@ -191,7 +191,7 @@ Logger.prototype.apiCallFail = function (call, callName){
     outer_this = this;
     var errorMes = JSON.stringify(call.error)
     if (errorMes != undefined || errorMes != null){
-        errorMes = errorMes.replace(/"/g, '\\"')
+        errorMes = errorMes.replace(/"/g, "\'")
     }
     var req = call.request
     var callField = {
