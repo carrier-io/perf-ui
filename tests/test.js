@@ -34,28 +34,30 @@ if (!test_name) {
 var times = argv['n'];
 if (!times) {
     times = 1;
-    console.log('Test going to be ran: ' + times + ' times')
+    console.log('Test going to be run: ' + times + ' times')
 
 }
-
-var parsed_scenario = parser.parseYmlFile('/tmp/tests/' + test_name)
-var influx_conf = parsed_scenario.influxdb || null
-var rp_conf = parsed_scenario.reportportal || null
-var scenario = parsed_scenario[env]
-var rp;
-var lighthouseDeviceType = parsed_scenario.lighthouseDeviceEmulate || null
-
-if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_name']) {
-    rp = new ReportPortal(rp_conf)
-    rp.startTestLaunch(test_name, `Results for ${test_name}`)
-} else if (rp_conf && (!rp_conf['rp_host'] || !rp_conf['rp_token'] || !rp_conf['rp_project_name'])) {
-    console.log("Some Report Portal config values don't set\n")
-    console.log(`Your config:\n ${JSON.stringify(rp_conf)}`)
-}
-
-var ScenarioBuilder = new Scenario(test_name, influx_conf, rp, lighthouseDeviceType, env)
 
 async function run() {
+    var path = '/tmp/tests/' + test_name
+    var parsed_scenario = parser.parseYmlFile(path)
+    var resolved_scernario = await parser.resolveRef(path)
+
+    var user_vars = resolved_scernario.user_vars || null
+    var influx_conf = resolved_scernario.influxdb || null
+    var rp_conf = resolved_scernario.reportportal || null
+    var scenario = resolved_scernario[env]
+    var rp;
+    var lighthouseDeviceType = parsed_scenario.lighthouseDeviceEmulate || null
+
+    if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_name']) {
+        rp = new ReportPortal(rp_conf)
+        rp.startTestLaunch(test_name, `Results for ${test_name}`)
+    } else if (rp_conf && (!rp_conf['rp_host'] || !rp_conf['rp_token'] || !rp_conf['rp_project_name'])) {
+        console.log("Some Report Portal config values don't set\n")
+        console.log(`Your config:\n ${JSON.stringify(rp_conf)}`)
+    }
+    var ScenarioBuilder = new Scenario(test_name, influx_conf, rp, lighthouseDeviceType, env, user_vars)
     for (var j = 1; j <= times; j++) {
         await ScenarioBuilder.scn(scenario, j, times)
     }

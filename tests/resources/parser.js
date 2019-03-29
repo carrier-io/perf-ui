@@ -17,12 +17,13 @@
 yaml = require('js-yaml');
 fs = require('fs');
 cookie = require('cookie-parse');
+$RefParser = require('json-schema-ref-parser');
 
 
 function parseYmlFile(filepath) {
     try {
         var parsedYaml = yaml.safeLoad(fs.readFileSync(filepath, 'utf8'))
-        console.log(JSON.stringify(parsedYaml))
+        // console.log(JSON.stringify(parsedYaml))
         return parsedYaml
     } catch (e) {
         console.log(e);
@@ -38,4 +39,10 @@ function parseCookie(filepath) {
     }
 }
 
-module.exports = {parseYmlFile, parseCookie};
+async function resolveRef(filepath) {
+    var result = await $RefParser.dereference(filepath).catch((err)=>{console.log(err)})
+    console.log(JSON.stringify(result))
+    return result
+}
+
+module.exports = { parseYmlFile, parseCookie, resolveRef };
