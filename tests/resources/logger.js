@@ -152,6 +152,85 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
     });
 };
 
+Logger.prototype.apiCallSuccess = function (call, callName){
+    console.log('ResponseCode: ' + call.statusCode)
+    outer_this = this;
+    var req = call.request
+    var callField = {
+        timingStart: call.timingStart,
+        elapsedTime: call.elapsedTime,
+        socket: call.timings.socket,
+        lookup: call.timings.lookup,
+        connect: call.timings.connect,
+        response: call.timings.response,
+        end: call.timings.end,
+        wait: call.timingPhases.wait,
+        dns: call.timingPhases.dns,
+        tcp: call.timingPhases.tcp,
+        firstByte: call.timingPhases.firstByte,
+        download: call.timingPhases.download,
+        total: call.timingPhases.total,
+        method: call.request.method,
+        statusCode: call.statusCode,
+        statusMess: call.statusMessage,
+        count: 1
+    }
+    var callTag = {
+        domain: req.uri.hostname,
+        callName: callName,
+        build_id: outer_this.build_id,
+        start_time: outer_this.start_time,
+        suite: outer_this.suite,
+        status: 'ok'
+    }
+    outer_this.client.write('apiperf').tag(callTag).field(callField).queue();
+    outer_this.client.syncWrite().catch((error) => { console.log(error) });
+}
+Logger.prototype.apiCallFail = function (call, callName){
+    console.log('ResponseCode: ' + call.statusCode)
+    outer_this = this;
+    var errorMes = JSON.stringify(call.error)
+    if (errorMes != undefined || errorMes != null){
+        errorMes = errorMes.replace(/"/g, "\'")
+    }
+    var req = call.request
+    var callField = {
+        timingStart: call.response.timingStart,
+        elapsedTime: call.response.elapsedTime,
+        socket: call.response.timings.socket,
+        lookup: call.response.timings.lookup,
+        connect: call.response.timings.connect,
+        response: call.response.timings.response,
+        end: call.response.timings.end,
+        wait: call.response.timingPhases.wait,
+        dns: call.response.timingPhases.dns,
+        tcp: call.response.timingPhases.tcp,
+        firstByte: call.response.timingPhases.firstByte,
+        download: call.response.timingPhases.download,
+        total: call.response.timingPhases.total,
+        method: call.response.request.method,
+        statusCode: call.statusCode,
+        statusMess: errorMes,
+        count: 1
+    }
+    var callTag = {
+        domain: (call.response.request.host).toString(),
+        callName: callName,
+        build_id: outer_this.build_id,
+        start_time: outer_this.start_time,
+        suite: outer_this.suite,
+        status: 'ko'
+    }
+    var errField = {
+        method: call.response.request.method,
+        statusCode: call.statusCode,
+        statusMess: errorMes
+    }
+    outer_this.client.write('apiperf').tag(callTag).field(callField).queue();
+    outer_this.client.write("errorsapi").tag(callTag).field(errField).queue();
+    outer_this.client.syncWrite().catch((error) => { console.log(error) });
+}
+
 function sleep(time) {
     var stop = new Date().getTime();
     while (new Date().getTime() < stop + time * 1000) {
