@@ -20,7 +20,7 @@ const {
 } = require('selenium-webdriver')
 
 require('chromedriver');
-// var JSONPATH = require('jsonpath')
+var JSONPATH = require('jsonpath')
 
 const testSteps = 'steps'
 const locatorXpath = 'xpath'
@@ -274,7 +274,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
     var constRegex = /[$]{(.*.)}/
 
     try {
-        console.log(`${test_name} test, iteration ${iteration}`)
+        console.log(`\n${test_name} test, iteration ${iteration}`)
         for (let page_name in scenario) {
 
             var stepList = []
@@ -313,34 +313,59 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                             for (let parameter in callParamPair) {
                                 console.log("\nSend %s Request (%d)", page_name, iteration)
                                 var parametrUserVar = callParamPair[parameter]
-                                
-                                for (let value in callParamPair[parameter]){
-                                    if (constRegex.test(callParamPair[parameter][value])){
+
+                                for (let value in callParamPair[parameter]) {
+                                    if (constRegex.test(callParamPair[parameter][value])) {
                                         var test = constRegex.exec(callParamPair[parameter][value])
                                         var test = test[1]
-                                        if (user_variables[test]!= null || user_variables[test] != undefined){
+                                        if (user_variables[test] != null || user_variables[test] != undefined) {
                                             parametrUserVar[value] = user_variables[test]
+                                            
+                                        }
+                                        else{
+                                            console.error("Cant read user variable " + parametrUserVar[value])
                                         }
                                     }
-                                    
+
                                 }
                                 getOption.qs = parametrUserVar
                                 await request(getOption)
                                     .then((res) => {
-                                        try{
+                                        try {
                                             var temp = JSON.parse(res.body)
                                         }
-                                        catch(err){
-                                            console.error("Cant parse body")
+                                        catch (err) {
+                                            var temp = res.body
                                         }
-                                        if (postActions){
-                                            for(let action in postActions){
-                                                if (postActions[action]['jsonValue']){
+                                        if (postActions) {
+                                            for (let action in postActions) {
+                                                if (postActions[action]['jsonValue']) {
                                                     var jsonValue = postActions[action]['jsonValue']
                                                     var tempUserVar = postActions[action]['saveAs']
                                                     var grabValue = temp[jsonValue]
-                                                    
                                                     user_variables[tempUserVar] = grabValue
+                                                }
+                                                if (postActions[action]['jsonPath']) {
+                                                    var jsonPathValue = postActions[action]['jsonPath']
+                                                    var tempUserVar = postActions[action]['saveAs']
+                                                    var grabValue = JSONPATH.value(temp, jsonPathValue)
+                                                    user_variables[tempUserVar] = grabValue
+                                                }
+                                                if (postActions[action]['regEx']) {
+                                                    var regexValue = postActions[action]['regEx']
+                                                    var tempUserVar = postActions[action]['saveAs']
+                                                    try{
+                                                        var grabValue = JSON.stringify(temp).match(regexValue)
+                                                    }
+                                                    catch(err){
+                                                        var grabValue = temp.toString().match(regexValue)
+                                                    }
+                                                    if (grabValue != null || grabValue != undefined){
+                                                        user_variables[tempUserVar] = grabValue[1]
+                                                    }
+                                                    else{
+                                                        user_variables[tempUserVar] = undefined
+                                                    }
                                                 }
                                             }
                                         }
@@ -359,7 +384,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                                         }
                                     })
                                     .catch((err) => {
-                                        // console.log(err)
+                                        console.log(err)
                                         outer_this.logger.apiCallFail(err, page_name)
                                         var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
                                         outer_this.junit.failCase(page_name, errorReason)
@@ -458,16 +483,19 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         if (callParamPair != undefined || callBodyPair != undefined) {
                             for (let parameter in callParamPair) {
                                 var parametrUserVar = callParamPair[parameter]
-                                
-                                for (let value in callParamPair[parameter]){
-                                    if (constRegex.test(callParamPair[parameter][value])){
+
+                                for (let value in callParamPair[parameter]) {
+                                    if (constRegex.test(callParamPair[parameter][value])) {
                                         var test = constRegex.exec(callParamPair[parameter][value])
                                         var test = test[1]
-                                        if (user_variables[test]!= null || user_variables[test] != undefined){
+                                        if (user_variables[test] != null || user_variables[test] != undefined) {
                                             parametrUserVar[value] = user_variables[test]
                                         }
+                                        else{
+                                            console.error("Cant read user variable " + parametrUserVar[value])
+                                        }
                                     }
-                                    
+
                                 }
                                 postOption.qs = parametrUserVar
                             }
@@ -478,14 +506,35 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                             await request(postOption)
                                 .then((res) => {
                                     var temp = res.body
-                                    if (postActions){
-                                        for(let action in postActions){
-                                            if (postActions[action]['jsonValue']){
+                                    if (postActions) {
+                                        for (let action in postActions) {
+                                            if (postActions[action]['jsonValue']) {
                                                 var jsonValue = postActions[action]['jsonValue']
                                                 var tempUserVar = postActions[action]['saveAs']
                                                 var grabValue = temp[jsonValue]
-                                                
                                                 user_variables[tempUserVar] = grabValue
+                                            }
+                                            if (postActions[action]['jsonPath']) {
+                                                var jsonPathValue = postActions[action]['jsonPath']
+                                                var tempUserVar = postActions[action]['saveAs']
+                                                var grabValue = JSONPATH.value(temp, jsonPathValue)
+                                                user_variables[tempUserVar] = grabValue
+                                            }
+                                            if (postActions[action]['regEx']) {
+                                                var regexValue = postActions[action]['regEx']
+                                                var tempUserVar = postActions[action]['saveAs']
+                                                try{
+                                                    var grabValue = JSON.stringify(temp).match(regexValue)
+                                                }
+                                                catch(err){
+                                                    var grabValue = temp.toString().match(regexValue)
+                                                }
+                                                if (grabValue != null || grabValue != undefined){
+                                                    user_variables[tempUserVar] = grabValue[1]
+                                                }
+                                                else{
+                                                    user_variables[tempUserVar] = undefined
+                                                }
                                             }
                                         }
                                     }
@@ -563,16 +612,19 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         if (callParamPair != undefined || callBodyPair != undefined) {
                             for (let parameter in callParamPair) {
                                 var parametrUserVar = callParamPair[parameter]
-                                
-                                for (let value in callParamPair[parameter]){
-                                    if (constRegex.test(callParamPair[parameter][value])){
+
+                                for (let value in callParamPair[parameter]) {
+                                    if (constRegex.test(callParamPair[parameter][value])) {
                                         var test = constRegex.exec(callParamPair[parameter][value])
                                         var test = test[1]
-                                        if (user_variables[test]!= null || user_variables[test] != undefined){
+                                        if (user_variables[test] != null || user_variables[test] != undefined) {
                                             parametrUserVar[value] = user_variables[test]
                                         }
+                                        else{
+                                            console.error("Cant read user variable " + parametrUserVar[value])
+                                        }
                                     }
-                                    
+
                                 }
                                 putOption.qs = parametrUserVar
                             }
@@ -583,14 +635,35 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                             await request(putOption)
                                 .then((res) => {
                                     var temp = res.body
-                                    if (postActions){
-                                        for(let action in postActions){
-                                            if (postActions[action]['jsonValue']){
+                                    if (postActions) {
+                                        for (let action in postActions) {
+                                            if (postActions[action]['jsonValue']) {
                                                 var jsonValue = postActions[action]['jsonValue']
                                                 var tempUserVar = postActions[action]['saveAs']
                                                 var grabValue = temp[jsonValue]
-                                                
                                                 user_variables[tempUserVar] = grabValue
+                                            }
+                                            if (postActions[action]['jsonPath']) {
+                                                var jsonPathValue = postActions[action]['jsonPath']
+                                                var tempUserVar = postActions[action]['saveAs']
+                                                var grabValue = JSONPATH.value(temp, jsonPathValue)
+                                                user_variables[tempUserVar] = grabValue
+                                            }
+                                            if (postActions[action]['regEx']) {
+                                                var regexValue = postActions[action]['regEx']
+                                                var tempUserVar = postActions[action]['saveAs']
+                                                try{
+                                                    var grabValue = JSON.stringify(temp).match(regexValue)
+                                                }
+                                                catch(err){
+                                                    var grabValue = temp.toString().match(regexValue)
+                                                }
+                                                if (grabValue != null || grabValue != undefined){
+                                                    user_variables[tempUserVar] = grabValue[1]
+                                                }
+                                                else{
+                                                    user_variables[tempUserVar] = undefined
+                                                }
                                             }
                                         }
                                     }
@@ -675,16 +748,19 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                         if (callParamPair != undefined || callBodyPair != undefined) {
                             for (let parameter in callParamPair) {
                                 var parametrUserVar = callParamPair[parameter]
-                                
-                                for (let value in callParamPair[parameter]){
-                                    if (constRegex.test(callParamPair[parameter][value])){
+
+                                for (let value in callParamPair[parameter]) {
+                                    if (constRegex.test(callParamPair[parameter][value])) {
                                         var test = constRegex.exec(callParamPair[parameter][value])
                                         var test = test[1]
-                                        if (user_variables[test]!= null || user_variables[test] != undefined){
+                                        if (user_variables[test] != null || user_variables[test] != undefined) {
                                             parametrUserVar[value] = user_variables[test]
                                         }
+                                        else{
+                                            console.error("Cant read user variable " + parametrUserVar[value])
+                                        }
                                     }
-                                    
+
                                 }
                                 deleteOption.qs = parametrUserVar
                             }
@@ -881,6 +957,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, iteration, times) {
                 await utils.sleep(3)
                 scenarioIter += 1
                 targetUrl = baseUrl
+                user_variables = {}
             }
         }
     } catch (error) {
