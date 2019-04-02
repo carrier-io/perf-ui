@@ -47,31 +47,20 @@ Logger.prototype.logError = function (error, domain, pageName, url) {
     var status = 'ko';
     var message = "Open " + pageName + " failed."
 
-    return new Promise(function (resolve, reject) {
-        var tags = {
-            'test_type': 'ui'
-        };
-        var fields = {
-            'request_name': pageName,
-            'domain': domain,
-            'path': utils.formatString(url),
-            'scenario': outer_this.scenario,
-            'error_type': defineErrorType(pageName, error.toString()),
-            'error_details': utils.formatString(error),
-            'error_message': message
-        };
-        if (outer_this.client != undefined || outer_this.client != null) {
-            outer_this.client.write('errors').tag(tags).field(fields).queue();
-            outer_this.client.syncWrite()
-                .then(() => {
-                    resolve(status);
-                })
-                .catch(error => {
-                    console.log(error);
-                    resolve(status);
-                })
-        }
-    })
+    var tags = { 'test_type': 'ui' }
+    var fields = {
+        'request_name': pageName,
+        'domain': domain,
+        'path': utils.formatString(url),
+        'scenario': outer_this.scenario,
+        'error_type': defineErrorType(pageName, error.toString()),
+        'error_details': utils.formatString(error),
+        'error_message': message
+    };
+    if (outer_this.client != undefined || outer_this.client != null) {
+        outer_this.client.write('errors').tag(tags).field(fields).queue();
+        outer_this.client.syncWrite().catch((error) => { console.log(error) });
+    }
 }
 
 function defineErrorType(pageName, errorMessage) {
