@@ -94,7 +94,7 @@ ScenarioBuilder.prototype.TestStepsExecute = async function (driver, page_name, 
         .then(() => { console.log("\nOpening %s TestCase (%d)", page_name, iteration) })
         .then(() => outer_this.ExecuteTest(driver, scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl))
         .catch((error) => { return error })
-        .then((error) => outer_this.ExecutionResultAnalyserAndReporter(driver, page_name, baseUrl, parameters, lh_name, error))
+        .then((error) => outer_this.ResultReport(driver, page_name, baseUrl, parameters, lh_name, error))
 }
 
 /// Method which executing list of steps
@@ -141,55 +141,38 @@ ScenarioBuilder.prototype.ExecuteTest = async function (driver, scenarioIter, ba
     }
     sesionCookie = await ActionWraper.GetSessionCookie(driver);
 }
-ScenarioBuilder.prototype.ExecutionResultAnalyserAndReporter = async function (driver, page_name, baseUrl, parameters, lh_name, error) {
+
+ScenarioBuilder.prototype.ResultReport = async function (driver, pageName, pageUrl, parameter, lh_name, error) {
     var outer_this = this;
-    if (error != null || error != undefined) {
-        await outer_this.FailCase(driver, page_name, error, baseUrl, parameters, lh_name)
+    var isAction
+    if (error) {
+        console.log(`Test Case ${pageName} failed.`)
+        await outer_this.junit.failCase(pageName, error)
     }
     else {
-        await outer_this.SuccessCase(driver, page_name, baseUrl, parameters, lh_name)
+        console.log(`Starting Analyse ${pageName}.`)
+        await outer_this.junit.successCase(pageName)
     }
-}
-
-ScenarioBuilder.prototype.FailCase = async function (driver, page_name, error, pageUrl, param, lh_name) {
-    console.log(`Test Case ${page_name} failed.`)
-    var outer_this = this;
-    var status = 'ko';
-
-    if (!outer_this.logger && !outer_this.rp) {
-        await utils.takeScreenshot(driver, `${page_name}_Failed`)
+    if (!outer_this.rp) {
+        if (error) {
+            await utils.takeScreenshot(driver, `${pageName}_Failed`)
+        }
+        else {
+            await utils.takeScreenshot(driver, pageName)
+        }
     }
     if (outer_this.logger) {
-        await outer_this.logger.logError(error, pageUrl, page_name, param)
-        await outer_this.logger.logInfo(driver, page_name, status)
-    }
-    if (lightHouseArr != undefined || lightHouseArr != null) {
-        if (lightHouseArr['mobile']) {
-            var lh_name_mobile = lh_name + "_mobile"
-            await outer_this.lighthouse.startLighthouse(lh_name_mobile, lighthouse_opts_mobile, driver, this.testName);
+        if (error) {
+            var status = 'ko'
+            await outer_this.logger.logError(error, pageUrl, pageName, parameter)
+            await outer_this.logger.logInfo(driver, pageName, status)
         }
-        if (lightHouseArr['desktop']) {
-            var lh_name_desktop = lh_name + "_desktop"
-            await outer_this.lighthouse.startLighthouse(lh_name_desktop, lighthouse_opts, driver, this.testName);
+        else {
+            var status = 'ok'
+            isAction = await outer_this.logger.logInfo(driver, pageName, status)
+            await driver.executeScript('performance.clearResourceTimings()');
         }
     }
-    if (outer_this.rp) {
-        await outer_this.rp.reportIssue(error, pageUrl, param, page_name, driver, lh_name_mobile, lh_name_desktop)
-    }
-    await outer_this.junit.failCase(page_name, error)
-}
-ScenarioBuilder.prototype.SuccessCase = async function (driver, page_name, pageUrl, param, lh_name) {
-    var outer_this = this;
-
-    console.log(`Starting Analyse ${page_name}.`)
-
-    var status = 'ok'
-    if (!outer_this.logger && !outer_this.rp) {
-        await utils.takeScreenshot(driver, page_name)
-    }
-
-    var isAction = await outer_this.logger.logInfo(driver, page_name, status)
-    await driver.executeScript('performance.clearResourceTimings()');
     if (!isAction) {
         if (lightHouseArr != undefined || lightHouseArr != null) {
             if (lightHouseArr['mobile']) {
@@ -201,10 +184,14 @@ ScenarioBuilder.prototype.SuccessCase = async function (driver, page_name, pageU
                 await outer_this.lighthouse.startLighthouse(lh_name_desktop, lighthouse_opts, driver, this.testName);
             }
         }
-        outer_this.junit.successCase(page_name)
     }
     if (outer_this.rp) {
-        await outer_this.rp.reportResult(page_name, pageUrl, param, driver, lh_name_mobile, lh_name_desktop)
+        if (error) {
+            await outer_this.rp.reportIssue(error, pageUrl, parameter, pageName, driver, lh_name_mobile, lh_name_desktop)
+        }
+        else {
+            await outer_this.rp.reportResult(pageName, pageUrl, parameter, driver, lh_name_mobile, lh_name_desktop)
+        }
     }
 }
 
