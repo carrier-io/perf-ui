@@ -16,7 +16,6 @@
 */
 
 var parser = require('./resources/parser')
-var utils = require('./resources/utils')
 var Scenario = require('./resources/scenario')
 var ReportPortal = require('./resources/report_portal')
 var argv = require('minimist')(process.argv.slice(2));
@@ -40,15 +39,13 @@ if (!times) {
 
 async function run() {
     var path = '/tmp/tests/' + test_name
-    var parsed_scenario = parser.parseYmlFile(path)
-    var resolved_scernario = await parser.resolveRef(path)
-
-    var user_vars = resolved_scernario.user_vars || null
-    var influx_conf = resolved_scernario.influxdb || null
-    var rp_conf = resolved_scernario.reportportal || null
-    var scenario = resolved_scernario[env]
+    var resolved_scenario = await parser.resolveRef(path)
+    var user_vars = resolved_scenario.user_vars || null
+    var influx_conf = resolved_scenario.influxdb || null
+    var rp_conf = resolved_scenario.reportportal || null
+    var scenario = resolved_scenario[env]
     var rp;
-    var lighthouseDeviceType = parsed_scenario.lighthouseDeviceEmulate || null
+    var lighthouseDeviceType = resolved_scenario.lighthouseDeviceEmulate || null
 
     if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_name']) {
         rp = new ReportPortal(rp_conf)
