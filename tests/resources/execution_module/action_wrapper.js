@@ -1,4 +1,4 @@
-const {By} = require('selenium-webdriver')
+const { By } = require('selenium-webdriver')
 
 
 module.exports = {

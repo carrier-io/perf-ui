@@ -38,9 +38,8 @@ const switchToDefault = 'switchToDefault'
 var Waiter = require("./waiters")
 var Lighthouse = require('./lighthouse')
 var Logger = require('./logger')
-const { format } = require('util')
 var utils = require('./utils')
-var ActionWraper = require('./execution_module/action_wraper')
+var ActionWrapper = require('./execution_module/action_wrapper')
 var JUnitBuilder = require('./junit_reporter')
 var requestREST = require('request-promise').defaults({ jar: true });
 var toughCookie = require('tough-cookie');
@@ -99,7 +98,6 @@ ScenarioBuilder.prototype.TestStepsExecute = async function (driver, page_name, 
 
 /// Method which executing list of steps
 ScenarioBuilder.prototype.ExecuteTest = async function (driver, scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl) {
-    var outer_this = this;
     var locator;
     var actionStep;
 
@@ -108,38 +106,38 @@ ScenarioBuilder.prototype.ExecuteTest = async function (driver, scenarioIter, ba
     }
     for (let step in stepList) {
         actionStep = stepList[step]
-        locator = await ActionWraper.GetWebElementLocator(actionStep)
+        locator = await ActionWrapper.GetWebElementLocator(actionStep)
         switch (actionStep[0]) {
             case 'input':
-                await ActionWraper.ExecuteInput(driver, locator, actionStep[3])
+                await ActionWrapper.ExecuteInput(driver, locator, actionStep[3])
                 break;
             case 'check':
-                await ActionWraper.ExecuteCheckIsPresent(waiter, locator)
+                await ActionWrapper.ExecuteCheckIsPresent(waiter, locator)
                 break;
             case 'checkIsNot':
-                await ActionWraper.ExecuteCheckIsNotPresent(waiter, locator)
+                await ActionWrapper.ExecuteCheckIsNotPresent(waiter, locator)
                 break;
             case 'click':
-                await ActionWraper.ExecuteClick(driver, locator)
+                await ActionWrapper.ExecuteClick(driver, locator)
                 break;
             case 'switchToFrame':
-                await ActionWraper.ExecuteSwitchToFrame(driver, locator)
+                await ActionWrapper.ExecuteSwitchToFrame(driver, locator)
                 break;
             case 'switchToDefault':
-                await ActionWraper.ExecuteSwitchToDefaultContent(driver)
+                await ActionWrapper.ExecuteSwitchToDefaultContent(driver)
                 break;
             case 'url':
-                await ActionWraper.ExecuteNavigateToUrl(driver, actionStep[1])
+                await ActionWrapper.ExecuteNavigateToUrl(driver, actionStep[1])
                 break;
             default:
                 break;
         }
     }
     if (pageCheck != null || pageCheck != undefined) {
-        locator = await ActionWraper.GetWebElementLocator(pageCheck)
-        await ActionWraper.ExecuteCheckIsPresent(waiter, locator)
+        locator = await ActionWrapper.GetWebElementLocator(pageCheck)
+        await ActionWrapper.ExecuteCheckIsPresent(waiter, locator)
     }
-    sesionCookie = await ActionWraper.GetSessionCookie(driver);
+    sesionCookie = await ActionWrapper.GetSessionCookie(driver);
 }
 
 ScenarioBuilder.prototype.ResultReport = async function (driver, pageName, pageUrl, parameter, lh_name, error) {
