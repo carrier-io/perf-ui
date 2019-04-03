@@ -22,7 +22,7 @@ var utils = require('./utils')
 function Logger(influx_conf, scenario, triger, suite) {
 
     this.triger = triger;
-    if (triger){
+    if (triger) {
         var influx_host = influx_conf['url'] + influx_conf['db_name']
         if (influx_conf['user'] && influx_conf['password']) {
             influx_host = influx_host.replace(/:\/\//g, `://${influx_conf['user']}:${influx_conf['password']}@`)
@@ -47,31 +47,20 @@ Logger.prototype.logError = function (error, domain, pageName, url) {
     var status = 'ko';
     var message = "Open " + pageName + " failed."
 
-    return new Promise(function (resolve, reject) {
-        var tags = {
-            'test_type': 'ui'
-        };
-        var fields = {
-            'request_name': pageName,
-            'domain': domain,
-            'path': utils.formatString(url),
-            'scenario': outer_this.scenario,
-            'error_type': defineErrorType(pageName, error.toString()),
-            'error_details': utils.formatString(error),
-            'error_message': message
-        };
-        if (outer_this.client != undefined || outer_this.client != null) {
-            outer_this.client.write('errors').tag(tags).field(fields).queue();
-            outer_this.client.syncWrite()
-                .then(() => {
-                    resolve(status);
-                })
-                .catch(error => {
-                    console.log(error);
-                    resolve(status);
-                })
-        }
-    })
+    var tags = { 'test_type': 'ui' }
+    var fields = {
+        'request_name': pageName,
+        'domain': domain,
+        'path': utils.formatString(url),
+        'scenario': outer_this.scenario,
+        'error_type': defineErrorType(pageName, error.toString()),
+        'error_details': utils.formatString(error),
+        'error_message': message
+    };
+    if (outer_this.client != undefined || outer_this.client != null) {
+        outer_this.client.write('errors').tag(tags).field(fields).queue();
+        outer_this.client.syncWrite().catch((error) => { console.log(error) });
+    }
 }
 
 function defineErrorType(pageName, errorMessage) {
@@ -143,7 +132,7 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
             }
 
             data = data.concat(datacell);
-            if (outer_this.client != undefined || outer_this.client != null){
+            if (outer_this.client != undefined || outer_this.client != null) {
                 outer_this.client.write(data[0]).tag(data[1]).field(data[2]).queue();
                 outer_this.client.syncWrite().catch((error) => { console.log(error) });
             }
@@ -152,7 +141,7 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
     });
 };
 
-Logger.prototype.apiCallSuccess = function (call, callName){
+Logger.prototype.apiCallSuccess = function (call, callName) {
     console.log('ResponseCode: ' + call.statusCode)
     outer_this = this;
     var req = call.request
@@ -183,14 +172,16 @@ Logger.prototype.apiCallSuccess = function (call, callName){
         suite: outer_this.suite,
         status: 'ok'
     }
-    outer_this.client.write('apiperf').tag(callTag).field(callField).queue();
-    outer_this.client.syncWrite().catch((error) => { console.log(error) });
+    if (outer_this.client != null || outer_this.client != undefined) {
+        outer_this.client.write('apiperf').tag(callTag).field(callField).queue();
+        outer_this.client.syncWrite().catch((error) => { console.log(error) });
+    }
 }
-Logger.prototype.apiCallFail = function (call, callName){
+Logger.prototype.apiCallFail = function (call, callName) {
     console.log('ResponseCode: ' + call.statusCode)
     outer_this = this;
     var errorMes = JSON.stringify(call.error)
-    if (errorMes != undefined || errorMes != null){
+    if (errorMes != undefined || errorMes != null) {
         errorMes = errorMes.replace(/"/g, "\'")
     }
     var req = call.request
@@ -226,9 +217,11 @@ Logger.prototype.apiCallFail = function (call, callName){
         statusCode: call.statusCode,
         statusMess: errorMes
     }
-    outer_this.client.write('apiperf').tag(callTag).field(callField).queue();
-    outer_this.client.write("errorsapi").tag(callTag).field(errField).queue();
-    outer_this.client.syncWrite().catch((error) => { console.log(error) });
+    if (outer_this.client != null || outer_this.client != undefined) {
+        outer_this.client.write('apiperf').tag(callTag).field(callField).queue();
+        outer_this.client.write("errorsapi").tag(callTag).field(errField).queue();
+        outer_this.client.syncWrite().catch((error) => { console.log(error) });
+    }
 }
 
 function sleep(time) {
