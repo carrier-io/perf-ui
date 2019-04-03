@@ -193,14 +193,14 @@ ScenarioBuilder.prototype.ResultReport = async function (driver, pageName, pageU
     }
 }
 
-ScenarioBuilder.prototype.getSesion = function (sesionState, url, cookieJar, reqOptions) {
-    if (sesionState.length > 1) {
-        for (let cookie in sesionState) {
-            cookieJar.setCookie(sesionState[cookie], url)
+ScenarioBuilder.prototype.getSession = function (sessionState, url, cookieJar, reqOptions) {
+    if (sessionState.length > 1) {
+        for (let cookie in sessionState) {
+            cookieJar.setCookie(sessionState[cookie], url)
         }
     }
     else {
-        cookieJar.setCookie(sesionState, url)
+        cookieJar.setCookie(sessionState, url)
     }
     reqOptions.jar = cookieJar
     return reqOptions
@@ -251,7 +251,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
                             getOption.headers.Cookie = cookieToAdd
                         }
                         if (sesionState != null || sesionState != undefined) {
-                            getOptions = outer_this.getSesion(sesionState, page['url'], cookieJar, getOption)
+                            getOptions = outer_this.getSession(sesionState, page['url'], cookieJar, getOption)
                         }
                         if (callParamPair != undefined || callBodyPair != undefined) {
                             for (let parameter in callParamPair) {
@@ -338,9 +338,9 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
                                     })
                                 await utils.sleep(1)
                             }
-                            for (let reqbody in callBodyPair) {
+                            for (let requestBody in callBodyPair) {
                                 console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                                getOption.headers.body = callBodyPair[reqbody]
+                                getOption.headers.body = callBodyPair[requestBody]
                                 await requestREST(getOption)
                                     .then((res) => {
                                         if (res.headers['set-cookie']) {
@@ -422,7 +422,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
                             postOption.headers.Cookie = cookieToAdd
                         }
                         if (sesionState != null || sesionState != undefined) {
-                            postOption = outer_this.getSesion(sesionState, page['url'], cookieJar, postOption)
+                            postOption = outer_this.getSession(sesionState, page['url'], cookieJar, postOption)
                         }
                         if (callParamPair != undefined || callBodyPair != undefined) {
                             for (let parameter in callParamPair) {
@@ -444,9 +444,9 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
                                 postOption.qs = parametrUserVar
                             }
                         }
-                        for (let reqbody in callBodyPair) {
+                        for (let requestBody in callBodyPair) {
                             console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                            postOption.body = callBodyPair[reqbody]
+                            postOption.body = callBodyPair[requestBody]
                             await requestREST(postOption)
                                 .then((res) => {
                                     var temp = res.body
@@ -551,7 +551,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
                             putOption.headers.Cookie = cookieToAdd
                         }
                         if (sesionState != null || sesionState != undefined) {
-                            putOption = outer_this.getSesion(sesionState, page['url'], cookieJar, putOption)
+                            putOption = outer_this.getSession(sesionState, page['url'], cookieJar, putOption)
                         }
                         if (callParamPair != undefined || callBodyPair != undefined) {
                             for (let parameter in callParamPair) {
@@ -573,9 +573,9 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
                                 putOption.qs = parametrUserVar
                             }
                         }
-                        for (let reqbody in callBodyPair) {
+                        for (let requestBody in callBodyPair) {
                             console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                            putOption.body = callBodyPair[reqbody]
+                            putOption.body = callBodyPair[requestBody]
                             await requestREST(putOption)
                                 .then((res) => {
                                     var temp = res.body
@@ -687,7 +687,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
                             deleteOption.headers.Cookie = cookieToAdd
                         }
                         if (sesionState != null || sesionState != undefined) {
-                            deleteOption = outer_this.getSesion(sesionState, page['url'], cookieJar, deleteOption)
+                            deleteOption = outer_this.getSession(sesionState, page['url'], cookieJar, deleteOption)
                         }
                         if (callParamPair != undefined || callBodyPair != undefined) {
                             for (let parameter in callParamPair) {
@@ -756,7 +756,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
                             optionsOption.headers.Cookie = cookieToAdd
                         }
                         if (sesionState != null || sesionState != undefined) {
-                            optionsOption = outer_this.getSesion(sesionState, page['url'], cookieJar, optionsOption)
+                            optionsOption = outer_this.getSession(sesionState, page['url'], cookieJar, optionsOption)
                         }
                         console.log("\nSend %s Request (%d)", page_name, globalIteration)
                         await requestREST(optionsOption)
