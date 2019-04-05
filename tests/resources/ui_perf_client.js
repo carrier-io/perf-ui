@@ -72,6 +72,35 @@ function measureActionTime(resourceTimingObj) {
     return end - start;
 }
 
+function rawTimingForAction(resourceTimingObj){
+    lastIndex = resourceTimingObj.length - 1
+
+    var result = {
+        "connectEnd": resourceTimingObj[lastIndex].connectEnd,
+        "connectStart": resourceTimingObj[0].connectStart,
+        "domComplete": 0,
+        "domContentLoadedEventEnd": 0,
+        "domContentLoadedEventStart": 0,
+        "domInteractive": 0,
+        "domLoading": 0,
+        "domainLookupEnd": resourceTimingObj[lastIndex].domainLookupEnd,
+        "domainLookupStart": resourceTimingObj[lastIndex].domainLookupStart,
+        "fetchStart": 0,
+        "loadEventEnd": resourceTimingObj[lastIndex].responseEnd,
+        "loadEventStart": 0,
+        "navigationStart": resourceTimingObj[0].startTime,
+        "redirectEnd": 0,
+        "redirectStart": 0,
+        "requestStart": 0,
+        "responseEnd": 0,
+        "responseStart": resourceTimingObj[lastIndex].responseStart,
+        "secureConnectionStart": 0,
+        "unloadEventEnd": 0,
+        "unloadEventStart": 0
+    }
+    return result
+}
+
 function compare(a, b) {
     return JSON.stringify(a) == JSON.stringify(b);
 }
@@ -99,18 +128,18 @@ UIPerformanceClient.prototype.parsePerfData = function (data, isFrame) {
         navTiming = this.perfFrameTiming;
     }
 
-    if (compare(navTiming, lastPerfNavTiming) || compare(this.perfFrameTiming, lastPerfNavTiming)) {      
-
-        
+    if (compare(navTiming, lastPerfNavTiming) || compare(this.perfFrameTiming, lastPerfNavTiming)) {         
         if (isFrame) {
             this.lastFrameIndex = currentLastResourceIndex;
         } else {
             this.lastResourceIndex = currentLastResourceIndex;
         }
 
+        var actionTiming = rawTimingForAction(lastPerfResourceTiming)
+
         return {
             'navigation': lastPerfNavTiming,
-            'timing': perfTiming,
+            'timing': actionTiming,
             'resource':  lastPerfResourceTiming, //shiftResourceTimings(resourceDiff),
             'formattedTiming': formattedPerfTimingAction,
             'domain': parsedURL.domain,
