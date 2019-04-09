@@ -75,7 +75,7 @@ function measureActionTime(resourceTimingObj) {
 function rawTimingForAction(resourceTimingObj){
     lastIndex = resourceTimingObj.length - 1
 
-    return {
+    var result = {
         "connectEnd": resourceTimingObj[lastIndex].connectEnd,
         "connectStart": resourceTimingObj[0].connectStart,
         "domComplete": 0,
@@ -98,6 +98,7 @@ function rawTimingForAction(resourceTimingObj){
         "unloadEventEnd": 0,
         "unloadEventStart": 0
     }
+    return result
 }
 
 function compare(a, b) {
@@ -134,9 +135,11 @@ UIPerformanceClient.prototype.parsePerfData = function (data, isFrame) {
             this.lastResourceIndex = currentLastResourceIndex;
         }
 
+        var actionTiming = rawTimingForAction(lastPerfResourceTiming)
+
         return {
             'navigation': lastPerfNavTiming,
-            'timing': rawTimingForAction(lastPerfResourceTiming),
+            'timing': actionTiming,
             'resource':  lastPerfResourceTiming, //shiftResourceTimings(resourceDiff),
             'formattedTiming': formattedPerfTimingAction,
             'domain': parsedURL.domain,
