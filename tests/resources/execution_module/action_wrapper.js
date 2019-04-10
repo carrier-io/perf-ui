@@ -32,10 +32,10 @@ module.exports = {
         if (step['id']){
             return By.id(step['id'])
         }
-        if (step[1] == 'name') {
+        if (step['name'] == 'name') {
             return By.name(step['name'])
         }
-        if (step[1] == 'class') {
+        if (step['class'] == 'class') {
             return By.className(step['class'])
         }
     },
