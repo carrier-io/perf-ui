@@ -13,6 +13,12 @@ function getLocator(step){
     if (step.id){
         locator = step.id
     }
+    if (step.name){
+        locator = step.name
+    }
+    if (step.class){
+        locator = step.class
+    }
     return locator
 }
 
@@ -26,6 +32,12 @@ function getTypeOfLocator(step){
     }
     else if (step.id){
         locatorType = 'id'
+    }
+    else if (step.name){
+        locatorType = 'name'
+    }
+    else if (step.class){
+        locatorType = 'class'
     }
     else {
         locatorType = step
@@ -87,6 +99,7 @@ module.exports = {
             }
             stepList[step]= AddStepToList(stepToAdd)
         }
+        console.log(stepList)
         return stepList
     }
 }
