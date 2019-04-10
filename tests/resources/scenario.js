@@ -20,34 +20,19 @@ const {
 } = require('selenium-webdriver')
 
 require('chromedriver');
-var JSONPATH = require('jsonpath')
 
 const testSteps = 'steps'
-const locatorXpath = 'xpath'
-const locatorCss = 'css'
-const locatorId = 'id'
-const testUrl = 'url'
-const testInput = 'input'
-const inputValue = 'value'
-const testClick = 'click'
-const testCheck = 'check'
-const testCheckNotPresent = 'checkIsNot'
-const switchToFrame = 'switchToFrame'
-const switchToDefault = 'switchToDefault'
 
 var Waiter = require("./waiters")
 var Lighthouse = require('./lighthouse')
 var Logger = require('./logger')
 var utils = require('./utils')
-var ActionWrapper = require('./execution_module/action_wrapper')
+var WebDriverActionWrapper = require('./execution_module/action_wrapper')
+var PageStepsBuilder = require('./execution_module/page_steps_builder')
+
 var JUnitBuilder = require('./junit_reporter')
-var requestREST = require('request-promise').defaults({ jar: true });
-var toughCookie = require('tough-cookie');
 var lightHouseArr
 var triggerForInfluxConfig
-var sesionCookie
-var sesionState
-var globalUserVariablesStore
 
 function ScenarioBuilder(test_name, influxConfig, reportPortalConfig, lightHouseDevice, suite, preSettedGlobalUserVariable) {
     this.testName = test_name.replace(/\.y.?ml/g, '')
@@ -106,38 +91,38 @@ ScenarioBuilder.prototype.ExecuteTest = async function (driver, scenarioIter, ba
     }
     for (let step in stepList) {
         actionStep = stepList[step]
-        locator = await ActionWrapper.GetWebElementLocator(actionStep)
+        locator = await WebDriverActionWrapper.GetWebElementLocator(actionStep)
         switch (actionStep[0]) {
             case 'input':
-                await ActionWrapper.ExecuteInput(driver, locator, actionStep[3])
+                await WebDriverActionWrapper.ExecuteInput(driver, locator, actionStep[3])
                 break;
             case 'check':
-                await ActionWrapper.ExecuteCheckIsPresent(waiter, locator)
+                await WebDriverActionWrapper.ExecuteCheckIsPresent(waiter, locator)
                 break;
             case 'checkIsNot':
-                await ActionWrapper.ExecuteCheckIsNotPresent(waiter, locator)
+                await WebDriverActionWrapper.ExecuteCheckIsNotPresent(waiter, locator)
                 break;
             case 'click':
-                await ActionWrapper.ExecuteClick(driver, locator)
+                await WebDriverActionWrapper.ExecuteClick(driver, locator)
                 break;
             case 'switchToFrame':
-                await ActionWrapper.ExecuteSwitchToFrame(driver, locator)
+                await WebDriverActionWrapper.ExecuteSwitchToFrame(driver, locator)
                 break;
             case 'switchToDefault':
-                await ActionWrapper.ExecuteSwitchToDefaultContent(driver)
+                await WebDriverActionWrapper.ExecuteSwitchToDefaultContent(driver)
                 break;
             case 'url':
-                await ActionWrapper.ExecuteNavigateToUrl(driver, actionStep[1])
+                await WebDriverActionWrapper.ExecuteNavigateToUrl(driver, actionStep[1])
                 break;
             default:
                 break;
         }
     }
     if (pageCheck != null || pageCheck != undefined) {
-        locator = await ActionWrapper.GetWebElementLocator(pageCheck)
-        await ActionWrapper.ExecuteCheckIsPresent(waiter, locator)
+        locator = await WebDriverActionWrapper.GetWebElementLocator(pageCheck)
+        await WebDriverActionWrapper.ExecuteCheckIsPresent(waiter, locator)
     }
-    sesionCookie = await ActionWrapper.GetSessionCookie(driver);
+    sesionCookie = await WebDriverActionWrapper.GetSessionCookie(driver);
 }
 
 ScenarioBuilder.prototype.ResultReport = async function (driver, pageName, pageUrl, parameter, lh_name, error) {
@@ -214,8 +199,6 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
     var scenarioIter = 0;
     var baseUrl
     var additionalUrl
-    var cookieJar = requestREST.jar();
-    var constRegex = /[$]{(.*.)}/
 
     try {
         console.log(`\n${test_name} test, iteration ${globalIteration}`)
@@ -223,686 +206,62 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
 
             var stepList = []
             var page = scenario[page_name]
+            var pageSteps = page[testSteps]
             var parameters = page['parameters']
             var pageUrlWithParameters
             var pageCheck
+            
+            if (page['url'] != null || page['url'] != undefined) {
+                baseUrl = page['url']
+            }
+            if (page['check'] != null || page['check']) {
+                pageCheck = page['check']
+            } else {
+                pageCheck = null;
+            }
+            stepList = PageStepsBuilder.StepListForExecution(pageSteps)
+            
+            if (driver == undefined || driver == null) {
+                driver = new Builder().withCapabilities(capabilities)
+                    .setAlertBehavior('accept')
+                    .forBrowser('chrome').build();
+                await driver.get("chrome://version");
+                let element = await driver.findElement(By.id('command_line'));
+                let text = await element.getText();
+                var splitStr = text.split(" ");
+                let port = 0
+                splitStr.filter(function (word, index) {
+                    if (word.match(/--remote-debugging-port=*/)) {
+                        port = Number(word.split('=')[1]);
+                        lighthouse_opts.port = port;
+                        lighthouse_opts_mobile.port = port;
+                    } else { }
+                });
+                waiter = new Waiter(driver)
+            }
 
-            if (page['method']) {
-                switch (page['method']) {
-                    case 'GET':
-                    case 'HEAD':
-                        var callParamPair = page['parameters']
-                        var callBodyPair = page['body']
-                        var postActions = page['postActions']
-                        var getOption = {
-                            method: page['method'],
-                            headers: page['headers'] || { perfui: "carrier-io" },
-                            time: true,
-                            resolveWithFullResponse: true
-                        }
-                        var path = page['path'] || '/'
-                        getOption.uri = page['url'] + path
-                        if (sesionCookie != null || sesionCookie != undefined) {
-                            var cookieToAdd = ''
-                            for (let cookie in sesionCookie) {
-                                var cookieBuilder = sesionCookie[cookie].name + "=" + sesionCookie[cookie].value + ";"
-                                cookieToAdd += cookieBuilder
-                            }
-                            getOption.headers.Cookie = cookieToAdd
-                        }
-                        if (sesionState != null || sesionState != undefined) {
-                            getOptions = outer_this.getSession(sesionState, page['url'], cookieJar, getOption)
-                        }
-                        if (callParamPair != undefined || callBodyPair != undefined) {
-                            for (let parameter in callParamPair) {
-                                console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                                var parametrUserVar = callParamPair[parameter]
+            if (parameters != null || parameters != undefined) {
+                if (parameters.length > 1) {
+                    var paramIterator = 1
+                    for (let parameter of parameters) {
+                        pageUrlWithParameters = baseUrl + parameter
+                        pageNameWithParameter = page_name + "_" + paramIterator
+                        await outer_this.TestStepsExecute(driver, pageNameWithParameter, pageUrlWithParameters, parameter, pageCheck, stepList, waiter, globalIteration, scenarioIter, additionalUrl)
+                        paramIterator += 1
+                    }
 
-                                for (let value in callParamPair[parameter]) {
-                                    if (constRegex.test(callParamPair[parameter][value])) {
-                                        var test = constRegex.exec(callParamPair[parameter][value])
-                                        var test = test[1]
-                                        if (globalUserVariablesStore[test] != null || globalUserVariablesStore[test] != undefined) {
-                                            parametrUserVar[value] = globalUserVariablesStore[test]
-
-                                        }
-                                        else {
-                                            console.error("Cant read user variable " + parametrUserVar[value])
-                                        }
-                                    }
-
-                                }
-                                getOption.qs = parametrUserVar
-                                await requestREST(getOption)
-                                    .then((res) => {
-                                        try {
-                                            var temp = JSON.parse(res.body)
-                                        }
-                                        catch (err) {
-                                            var temp = res.body
-                                        }
-                                        if (postActions) {
-                                            for (let action in postActions) {
-                                                if (postActions[action]['jsonValue']) {
-                                                    var jsonValue = postActions[action]['jsonValue']
-                                                    var tempUserVar = postActions[action]['saveAs']
-                                                    var grabValue = temp[jsonValue]
-                                                    globalUserVariablesStore[tempUserVar] = grabValue
-                                                }
-                                                if (postActions[action]['jsonPath']) {
-                                                    var jsonPathValue = postActions[action]['jsonPath']
-                                                    var tempUserVar = postActions[action]['saveAs']
-                                                    var grabValue = JSONPATH.value(temp, jsonPathValue)
-                                                    globalUserVariablesStore[tempUserVar] = grabValue
-                                                }
-                                                if (postActions[action]['regEx']) {
-                                                    var regexValue = postActions[action]['regEx']
-                                                    var tempUserVar = postActions[action]['saveAs']
-                                                    try {
-                                                        var grabValue = JSON.stringify(temp).match(regexValue)
-                                                    }
-                                                    catch (err) {
-                                                        var grabValue = temp.toString().match(regexValue)
-                                                    }
-                                                    if (grabValue != null || grabValue != undefined) {
-                                                        globalUserVariablesStore[tempUserVar] = grabValue[1]
-                                                    }
-                                                    else {
-                                                        globalUserVariablesStore[tempUserVar] = undefined
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        if (res.headers['set-cookie']) {
-                                            if (res.headers['set-cookie'] instanceof Array) {
-                                                sesionState = res.headers['set-cookie'].map(toughCookie.Cookie.parse)
-                                            }
-                                            else {
-                                                sesionState = [toughCookie.Cookie.parse(res.headers['set-cookie'])];
-                                            }
-                                        }
-                                        outer_this.logger.apiCallSuccess(res, page_name)
-                                        outer_this.junit.successCase(page_name)
-                                        if (outer_this.rp) {
-                                            outer_this.rp.successCall(res, page_name)
-                                        }
-                                    })
-                                    .catch((err) => {
-                                        console.log(err)
-                                        outer_this.logger.apiCallFail(err, page_name)
-                                        var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
-                                        outer_this.junit.failCase(page_name, errorReason)
-                                        if (outer_this.rp) {
-                                            outer_this.rp.failedCall(err, page_name)
-                                        }
-                                    })
-                                await utils.sleep(1)
-                            }
-                            for (let requestBody in callBodyPair) {
-                                console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                                getOption.headers.body = callBodyPair[requestBody]
-                                await requestREST(getOption)
-                                    .then((res) => {
-                                        if (res.headers['set-cookie']) {
-                                            if (res.headers['set-cookie'] instanceof Array) {
-                                                sesionState = res.headers['set-cookie'].map(toughCookie.Cookie.parse)
-                                            }
-                                            else {
-                                                sesionState = [toughCookie.Cookie.parse(res.headers['set-cookie'])];
-                                            }
-                                        }
-                                        outer_this.logger.apiCallSuccess(res, page_name)
-                                        outer_this.junit.successCase(page_name)
-                                        if (outer_this.rp) {
-                                            outer_this.rp.successCall(res, page_name)
-                                        }
-                                    })
-                                    .catch((err) => {
-                                        console.log(err)
-                                        outer_this.logger.apiCallFail(err, page_name)
-                                        var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
-                                        outer_this.junit.failCase(page_name, errorReason)
-                                        if (outer_this.rp) {
-                                            outer_this.rp.failedCall(err, page_name)
-                                        }
-                                    })
-                                await utils.sleep(1)
-                            }
-                        }
-                        else {
-                            console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                            await requestREST(getOption)
-                                .then((res) => {
-                                    if (res.headers['set-cookie']) {
-                                        if (res.headers['set-cookie'] instanceof Array) {
-                                            sesionState = res.headers['set-cookie'].map(toughCookie.Cookie.parse)
-                                        }
-                                        else {
-                                            sesionState = [toughCookie.Cookie.parse(res.headers['set-cookie'])];
-                                        }
-                                    }
-                                    outer_this.logger.apiCallSuccess(res, page_name)
-                                    outer_this.junit.successCase(page_name)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.successCall(res, page_name)
-                                    }
-                                })
-                                .catch((err) => {
-                                    outer_this.logger.apiCallFail(err, page_name)
-                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
-                                    outer_this.junit.failCase(page_name, errorReason)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.failedCall(err, page_name)
-                                    }
-                                })
-                            await utils.sleep(1)
-                        }
-                        break;
-                    case 'POST':
-                        var callBodyPair = page['body']
-                        var callFormPair = page['form']
-                        var callParamPair = page['parameters']
-                        var postActions = page['postActions']
-                        var postHeaders = page['headers'] || { perfui: "carrier-io" }
-                        var postOption = {
-                            method: 'POST',
-                            headers: postHeaders,
-                            json: true,
-                            time: true,
-                            resolveWithFullResponse: true
-                        }
-                        var path = page['path'] || '/'
-                        postOption.uri = page['url'] + path
-                        if (sesionCookie != null || sesionCookie != undefined) {
-                            var cookieToAdd = ''
-                            for (let cookie in sesionCookie) {
-                                var cookieBuilder = sesionCookie[cookie].name + "=" + sesionCookie[cookie].value + ";"
-                                cookieToAdd += cookieBuilder
-                            }
-                            postOption.headers.Cookie = cookieToAdd
-                        }
-                        if (sesionState != null || sesionState != undefined) {
-                            postOption = outer_this.getSession(sesionState, page['url'], cookieJar, postOption)
-                        }
-                        if (callParamPair != undefined || callBodyPair != undefined) {
-                            for (let parameter in callParamPair) {
-                                var parametrUserVar = callParamPair[parameter]
-
-                                for (let value in callParamPair[parameter]) {
-                                    if (constRegex.test(callParamPair[parameter][value])) {
-                                        var test = constRegex.exec(callParamPair[parameter][value])
-                                        var test = test[1]
-                                        if (globalUserVariablesStore[test] != null || globalUserVariablesStore[test] != undefined) {
-                                            parametrUserVar[value] = globalUserVariablesStore[test]
-                                        }
-                                        else {
-                                            console.error("Cant read user variable " + parametrUserVar[value])
-                                        }
-                                    }
-
-                                }
-                                postOption.qs = parametrUserVar
-                            }
-                        }
-                        for (let requestBody in callBodyPair) {
-                            console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                            postOption.body = callBodyPair[requestBody]
-                            await requestREST(postOption)
-                                .then((res) => {
-                                    var temp = res.body
-                                    if (postActions) {
-                                        for (let action in postActions) {
-                                            if (postActions[action]['jsonValue']) {
-                                                var jsonValue = postActions[action]['jsonValue']
-                                                var tempUserVar = postActions[action]['saveAs']
-                                                var grabValue = temp[jsonValue]
-                                                globalUserVariablesStore[tempUserVar] = grabValue
-                                            }
-                                            if (postActions[action]['jsonPath']) {
-                                                var jsonPathValue = postActions[action]['jsonPath']
-                                                var tempUserVar = postActions[action]['saveAs']
-                                                var grabValue = JSONPATH.value(temp, jsonPathValue)
-                                                globalUserVariablesStore[tempUserVar] = grabValue
-                                            }
-                                            if (postActions[action]['regEx']) {
-                                                var regexValue = postActions[action]['regEx']
-                                                var tempUserVar = postActions[action]['saveAs']
-                                                try {
-                                                    var grabValue = JSON.stringify(temp).match(regexValue)
-                                                }
-                                                catch (err) {
-                                                    var grabValue = temp.toString().match(regexValue)
-                                                }
-                                                if (grabValue != null || grabValue != undefined) {
-                                                    globalUserVariablesStore[tempUserVar] = grabValue[1]
-                                                }
-                                                else {
-                                                    globalUserVariablesStore[tempUserVar] = undefined
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if (res.headers['set-cookie']) {
-                                        if (res.headers['set-cookie'] instanceof Array) {
-                                            sesionState = res.headers['set-cookie'].map(toughCookie.Cookie.parse)
-                                        }
-                                        else {
-                                            sesionState = [toughCookie.Cookie.parse(res.headers['set-cookie'])];
-                                        }
-                                    }
-                                    outer_this.logger.apiCallSuccess(res, page_name)
-                                    outer_this.junit.successCase(page_name)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.successCall(res, page_name)
-                                    }
-                                })
-                                .catch((err) => {
-                                    outer_this.logger.apiCallFail(err, page_name)
-                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
-                                    outer_this.junit.failCase(page_name, errorReason)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.failedCall(err, page_name)
-                                    }
-                                })
-                            await utils.sleep(1)
-                        }
-                        for (let xform in callFormPair) {
-                            console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                            postOption.form = callFormPair[xform]
-                            await requestREST(postOption)
-                                .then((res) => {
-                                    outer_this.logger.apiCallSuccess(res, page_name)
-                                    outer_this.junit.successCase(page_name)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.successCall(res, page_name)
-                                    }
-                                })
-                                .catch((err) => {
-                                    outer_this.logger.apiCallFail(err, page_name)
-                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
-                                    outer_this.junit.failCase(page_name, errorReason)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.failedCall(err, page_name)
-                                    }
-                                })
-                            await utils.sleep(1)
-                        }
-                        break;
-                    case 'PUT':
-                        var callBodyPair = page['body']
-                        var callFormPair = page['form']
-                        var postActions = page['postActions']
-                        var putHeaders = page['headers'] || { perfui: "carrier-io" }
-                        var putOption = {
-                            method: 'PUT',
-                            json: true,
-                            headers: putHeaders,
-                            time: true,
-                            resolveWithFullResponse: true
-                        }
-                        var path = page['path'] || '/'
-                        putOption.uri = page['url'] + path
-                        if (sesionCookie != null || sesionCookie != undefined) {
-                            var cookieToAdd = ''
-                            for (let cookie in sesionCookie) {
-                                var cookieBuilder = sesionCookie[cookie].name + "=" + sesionCookie[cookie].value + ";"
-                                cookieToAdd += cookieBuilder
-                            }
-                            putOption.headers.Cookie = cookieToAdd
-                        }
-                        if (sesionState != null || sesionState != undefined) {
-                            putOption = outer_this.getSession(sesionState, page['url'], cookieJar, putOption)
-                        }
-                        if (callParamPair != undefined || callBodyPair != undefined) {
-                            for (let parameter in callParamPair) {
-                                var parametrUserVar = callParamPair[parameter]
-
-                                for (let value in callParamPair[parameter]) {
-                                    if (constRegex.test(callParamPair[parameter][value])) {
-                                        var test = constRegex.exec(callParamPair[parameter][value])
-                                        var test = test[1]
-                                        if (globalUserVariablesStore[test] != null || globalUserVariablesStore[test] != undefined) {
-                                            parametrUserVar[value] = globalUserVariablesStore[test]
-                                        }
-                                        else {
-                                            console.error("Cant read user variable " + parametrUserVar[value])
-                                        }
-                                    }
-
-                                }
-                                putOption.qs = parametrUserVar
-                            }
-                        }
-                        for (let requestBody in callBodyPair) {
-                            console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                            putOption.body = callBodyPair[requestBody]
-                            await requestREST(putOption)
-                                .then((res) => {
-                                    var temp = res.body
-                                    if (postActions) {
-                                        for (let action in postActions) {
-                                            if (postActions[action]['jsonValue']) {
-                                                var jsonValue = postActions[action]['jsonValue']
-                                                var tempUserVar = postActions[action]['saveAs']
-                                                var grabValue = temp[jsonValue]
-                                                globalUserVariablesStore[tempUserVar] = grabValue
-                                            }
-                                            if (postActions[action]['jsonPath']) {
-                                                var jsonPathValue = postActions[action]['jsonPath']
-                                                var tempUserVar = postActions[action]['saveAs']
-                                                var grabValue = JSONPATH.value(temp, jsonPathValue)
-                                                globalUserVariablesStore[tempUserVar] = grabValue
-                                            }
-                                            if (postActions[action]['regEx']) {
-                                                var regexValue = postActions[action]['regEx']
-                                                var tempUserVar = postActions[action]['saveAs']
-                                                try {
-                                                    var grabValue = JSON.stringify(temp).match(regexValue)
-                                                }
-                                                catch (err) {
-                                                    var grabValue = temp.toString().match(regexValue)
-                                                }
-                                                if (grabValue != null || grabValue != undefined) {
-                                                    globalUserVariablesStore[tempUserVar] = grabValue[1]
-                                                }
-                                                else {
-                                                    globalUserVariablesStore[tempUserVar] = undefined
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if (res.headers['set-cookie']) {
-                                        if (res.headers['set-cookie'] instanceof Array) {
-                                            sesionState = res.headers['set-cookie'].map(toughCookie.Cookie.parse)
-                                        }
-                                        else {
-                                            sesionState = [toughCookie.Cookie.parse(res.headers['set-cookie'])];
-                                        }
-                                    }
-                                    outer_this.logger.apiCallSuccess(res, page_name)
-                                    outer_this.junit.successCase(page_name)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.successCall(res, page_name)
-                                    }
-                                })
-                                .catch((err) => {
-                                    outer_this.logger.apiCallFail(err, page_name)
-                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
-                                    outer_this.junit.failCase(page_name, errorReason)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.failedCall(err, page_name)
-                                    }
-                                })
-                            await utils.sleep(1)
-                        }
-                        for (let xform in callFormPair) {
-                            console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                            putOption.form = callFormPair[xform]
-                            await requestREST(putOption)
-                                .then((res) => {
-                                    if (res.headers['set-cookie']) {
-                                        if (res.headers['set-cookie'] instanceof Array) {
-                                            sesionState = res.headers['set-cookie'].map(toughCookie.Cookie.parse)
-                                        }
-                                        else {
-                                            sesionState = [toughCookie.Cookie.parse(res.headers['set-cookie'])];
-                                        }
-                                    }
-                                    outer_this.logger.apiCallSuccess(res, page_name)
-                                    outer_this.junit.successCase(page_name)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.successCall(res, page_name)
-                                    }
-                                })
-                                .catch((err) => {
-                                    outer_this.logger.apiCallFail(err, page_name)
-                                    var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
-                                    outer_this.junit.failCase(page_name, errorReason)
-                                    if (outer_this.rp) {
-                                        outer_this.rp.failedCall(err, page_name)
-                                    }
-                                })
-                            await utils.sleep(1)
-                        }
-                        break;
-                    case 'DELETE':
-                        var callBodyPair = page['body']
-                        var callFormPair = page['form']
-                        var callParamPair = page['parameters']
-                        var deleteHeaders = page['headers'] || { perfui: "carrier-io" }
-                        var deleteOption = {
-                            method: 'DELETE',
-                            headers: deleteHeaders,
-                            time: true,
-                            resolveWithFullResponse: true
-                        }
-                        var path = page['path'] || '/'
-                        deleteOption.uri = page['url'] + path
-                        if (sesionCookie != null || sesionCookie != undefined) {
-                            var cookieToAdd = ''
-                            for (let cookie in sesionCookie) {
-                                var cookieBuilder = sesionCookie[cookie].name + "=" + sesionCookie[cookie].value + ";"
-                                cookieToAdd += cookieBuilder
-                            }
-                            deleteOption.headers.Cookie = cookieToAdd
-                        }
-                        if (sesionState != null || sesionState != undefined) {
-                            deleteOption = outer_this.getSession(sesionState, page['url'], cookieJar, deleteOption)
-                        }
-                        if (callParamPair != undefined || callBodyPair != undefined) {
-                            for (let parameter in callParamPair) {
-                                var parametrUserVar = callParamPair[parameter]
-
-                                for (let value in callParamPair[parameter]) {
-                                    if (constRegex.test(callParamPair[parameter][value])) {
-                                        var test = constRegex.exec(callParamPair[parameter][value])
-                                        var test = test[1]
-                                        if (globalUserVariablesStore[test] != null || globalUserVariablesStore[test] != undefined) {
-                                            parametrUserVar[value] = globalUserVariablesStore[test]
-                                        }
-                                        else {
-                                            console.error("Cant read user variable " + parametrUserVar[value])
-                                        }
-                                    }
-
-                                }
-                                deleteOption.qs = parametrUserVar
-                            }
-                        }
-                        console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                        await requestREST(deleteOption)
-                            .then((res) => {
-                                if (res.headers['set-cookie']) {
-                                    if (res.headers['set-cookie'] instanceof Array) {
-                                        sesionState = res.headers['set-cookie'].map(toughCookie.Cookie.parse)
-                                    }
-                                    else {
-                                        sesionState = [toughCookie.Cookie.parse(res.headers['set-cookie'])];
-                                    }
-                                }
-                                outer_this.logger.apiCallSuccess(res, page_name)
-                                outer_this.junit.successCase(page_name)
-                                if (outer_this.rp) {
-                                    outer_this.rp.successCall(res, page_name)
-                                }
-                            })
-                            .catch((err) => {
-                                outer_this.logger.apiCallFail(err, page_name)
-                                var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
-                                outer_this.junit.failCase(page_name, errorReason)
-                                if (outer_this.rp) {
-                                    outer_this.rp.failedCall(err, page_name)
-                                }
-                            })
-                        await utils.sleep(1)
-                        break;
-                    case 'OPTIONS':
-                        var optionHeaders = page['headers'] || { perfui: "carrier-io" }
-                        var optionsOption = {
-                            method: 'OPTIONS',
-                            headers: optionHeaders,
-                            json: true,
-                            time: true,
-                            resolveWithFullResponse: true
-                        }
-                        var path = page['path'] || '/'
-                        optionsOption.uri = page['url'] + path
-                        if (sesionCookie != null || sesionCookie != undefined) {
-                            var cookieToAdd = ''
-                            for (let cookie in sesionCookie) {
-                                var cookieBuilder = sesionCookie[cookie].name + "=" + sesionCookie[cookie].value + ";"
-                                cookieToAdd += cookieBuilder
-                            }
-                            optionsOption.headers.Cookie = cookieToAdd
-                        }
-                        if (sesionState != null || sesionState != undefined) {
-                            optionsOption = outer_this.getSession(sesionState, page['url'], cookieJar, optionsOption)
-                        }
-                        console.log("\nSend %s Request (%d)", page_name, globalIteration)
-                        await requestREST(optionsOption)
-                            .then((res) => {
-                                if (res.headers['set-cookie']) {
-                                    if (res.headers['set-cookie'] instanceof Array) {
-                                        sesionState = res.headers['set-cookie'].map(toughCookie.Cookie.parse)
-                                    }
-                                    else {
-                                        sesionState = [toughCookie.Cookie.parse(res.headers['set-cookie'])];
-                                    }
-                                }
-                                outer_this.logger.apiCallSuccess(res, page_name)
-                                outer_this.junit.successCase(page_name)
-                                if (outer_this.rp) {
-                                    outer_this.rp.successCall(res, page_name)
-                                }
-                            })
-                            .catch((err) => {
-                                outer_this.logger.apiCallFail(err, page_name)
-                                var errorReason = err.statusCode + " response code. Message: " + JSON.stringify(err.error)
-                                outer_this.junit.failCase(page_name, errorReason)
-                                if (outer_this.rp) {
-                                    outer_this.rp.failedCall(err, page_name)
-                                }
-                            })
-                        await utils.sleep(1)
-                        break;
-                    default:
-                        break;
+                } else {
+                    pageUrlWithParameters = baseUrl + parameters
+                    await outer_this.TestStepsExecute(driver, page_name, pageUrlWithParameters, parameters, pageCheck, stepList, waiter, globalIteration, scenarioIter, additionalUrl)
                 }
-                await utils.sleep(1)
             }
             else {
-
-                if (page['url'] != null || page['url'] != undefined) {
-                    baseUrl = page['url']
-                }
-                if (page['check'] != null || page['check']) {
-                    pageCheck = page['check']
-                } else {
-                    pageCheck = null;
-                }
-                if (page[testSteps] != null || page[testSteps] != undefined) {
-                    for (i = 0; i < page[testSteps].length; i++) {
-                        if (page[testSteps][i][testUrl]) {
-                            var url = page[testSteps][i][testUrl]
-                            stepList[i] = [testUrl, url]
-                        }
-                        if (page[testSteps][i][testInput]) {
-                            var inputStep = page[testSteps][i][testInput]
-                            if (inputStep[locatorXpath]) {
-                                stepList[i] = [testInput, locatorXpath, inputStep[locatorXpath], inputStep[inputValue]]
-                            }
-                            if (inputStep[locatorCss]) {
-                                stepList[i] = [testInput, locatorCss, inputStep[locatorCss], inputStep[inputValue]]
-                            }
-                        }
-                        if (page[testSteps][i][testCheckNotPresent]) {
-                            var inputStep = page[testSteps][i][testCheckNotPresent]
-                            if (inputStep[locatorXpath]) {
-                                stepList[i] = [testCheckNotPresent, locatorXpath, inputStep[locatorXpath]]
-                            }
-                            if (inputStep[locatorCss]) {
-                                stepList[i] = [testCheckNotPresent, locatorCss, inputStep[locatorCss]]
-                            }
-                        }
-                        if (page[testSteps][i][testClick]) {
-                            stepClick = page[testSteps][i][testClick]
-                            if (stepClick[locatorXpath]) {
-                                stepList[i] = [testClick, locatorXpath, stepClick[locatorXpath]]
-                            }
-                            if (stepClick[locatorCss]) {
-                                stepList[i] = [testClick, locatorCss, stepClick[locatorCss]]
-                            }
-                        }
-                        if (page[testSteps][i][testCheck]) {
-                            stepCheck = page[testSteps][i][testCheck]
-                            if (stepCheck[locatorXpath]) {
-                                stepList[i] = [testCheck, locatorXpath, stepCheck[locatorXpath]]
-                            }
-                            if (stepCheck[locatorCss]) {
-                                stepList[i] = [testCheck, locatorCss, stepCheck[locatorCss]]
-                            }
-                        }
-                        if (page[testSteps][i][switchToFrame]) {
-                            stepSwitch = page[testSteps][i][switchToFrame]
-                            if (stepSwitch[locatorId]) {
-                                stepList[i] = [switchToFrame, locatorId, stepSwitch[locatorId]]
-                            }
-                            if (stepSwitch[locatorXpath]) {
-                                stepList[i] = [switchToFrame, locatorXpath, stepSwitch[locatorXpath]]
-                            }
-                            if (stepSwitch[locatorCss]) {
-                                stepList[i] = [switchToFrame, locatorCss, stepSwitch[locatorCss]]
-                            }
-                        }
-                        if (page[testSteps][i][switchToDefault]) {
-                            stepSwitch = page[testSteps][i][switchToDefault]
-                            stepList[i] = [switchToDefault, true]
-                        }
-                    }
-                }
-                if (driver == undefined || driver == null) {
-
-                    driver = new Builder().withCapabilities(capabilities)
-                        .setAlertBehavior('accept')
-                        .forBrowser('chrome').build();
-                    await driver.get("chrome://version");
-                    let element = await driver.findElement(By.id('command_line'));
-                    let text = await element.getText();
-                    var splitStr = text.split(" ");
-                    let port = 0
-                    splitStr.filter(function (word, index) {
-                        if (word.match(/--remote-debugging-port=*/)) {
-                            port = Number(word.split('=')[1]);
-                            lighthouse_opts.port = port;
-                            lighthouse_opts_mobile.port = port;
-                        } else { }
-                    });
-                    waiter = new Waiter(driver)
-                }
-
-                if (parameters != null || parameters != undefined) {
-                    if (parameters.length > 1) {
-                        var paramIterator = 1
-                        for (let parameter of parameters) {
-                            pageUrlWithParameters = baseUrl + parameter
-                            pageNameWithParameter = page_name + "_" + paramIterator
-                            await outer_this.TestStepsExecute(driver, pageNameWithParameter, pageUrlWithParameters, parameter, pageCheck, stepList, waiter, globalIteration, scenarioIter, additionalUrl)
-                            paramIterator += 1
-                        }
-
-                    } else {
-                        var pageUrlWithParameters = baseUrl + parameters
-                        await outer_this.TestStepsExecute(driver, page_name, pageUrlWithParameters, parameters, pageCheck, stepList, waiter, globalIteration, scenarioIter, additionalUrl)
-                    }
-                }
-                else {
-                    await outer_this.TestStepsExecute(driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, globalIteration, scenarioIter, additionalUrl)
-                }
-                await utils.sleep(3)
-                scenarioIter += 1
-                additionalUrl = baseUrl
-                globalUserVariablesStore = {}
+                await outer_this.TestStepsExecute(driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, globalIteration, scenarioIter, additionalUrl)
             }
+            await utils.sleep(3)
+            scenarioIter += 1
+            additionalUrl = baseUrl
+            globalUserVariablesStore = {}
         }
     } catch (error) {
         console.log(error)
