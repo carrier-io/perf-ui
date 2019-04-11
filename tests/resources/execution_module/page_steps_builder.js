@@ -99,7 +99,6 @@ module.exports = {
             }
             stepList[step]= AddStepToList(stepToAdd)
         }
-        console.log(stepList)
         return stepList
     }
 }

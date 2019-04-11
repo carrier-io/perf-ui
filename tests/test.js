@@ -40,23 +40,29 @@ if (!times) {
 async function run() {
     var path = '/tmp/tests/' + test_name
     var resolved_scenario = await parser.resolveRef(path)
-    var user_vars = resolved_scenario.user_vars || null
     var influx_conf = resolved_scenario.influxdb || null
     var rp_conf = resolved_scenario.reportportal || null
     var scenario = resolved_scenario[env]
+    
     var rp;
     var lighthouseDeviceType = resolved_scenario.lighthouseDeviceEmulate || null
 
-    if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_name']) {
+    if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_name'] && (scenario != null || scenario != undefined )) {
         rp = new ReportPortal(rp_conf)
         rp.startTestLaunch(test_name, `Results for ${test_name}`)
     } else if (rp_conf && (!rp_conf['rp_host'] || !rp_conf['rp_token'] || !rp_conf['rp_project_name'])) {
         console.log("Some Report Portal config values don't set\n")
         console.log(`Your config:\n ${JSON.stringify(rp_conf)}`)
     }
-    var ScenarioBuilder = new Scenario(test_name, influx_conf, rp, lighthouseDeviceType, env, user_vars)
+    var ScenarioBuilder = new Scenario(test_name, influx_conf, rp, lighthouseDeviceType, env)
     for (var j = 1; j <= times; j++) {
-        await ScenarioBuilder.scn(scenario, j, times)
+        if (scenario != null || scenario != undefined){
+            await ScenarioBuilder.scn(scenario, j, times)
+        }
+        else {
+            console.log(`\nTest '${env}' is not exist`)
+            break
+        }
     }
 }
 

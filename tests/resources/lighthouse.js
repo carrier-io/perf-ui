@@ -62,7 +62,7 @@ function uploadLighthousePage(formData, simulation) {
         });
 }
 
-Lighthouse.prototype.runLighthouse =async function (url, lighthouse_opts, config = null) {
+Lighthouse.prototype.runLighthouse = async function (url, lighthouse_opts, config = null) {
     return await lighthouse(url, lighthouse_opts, config).then(results => {
         delete results.artifacts;
         return results
@@ -84,11 +84,22 @@ Lighthouse.prototype.saveLighthouse = async function (data, pageName, simulation
     }
 }
 
-Lighthouse.prototype.startLighthouse =async function (pageName, lighthouse_opts, driver, simulation) {
+Lighthouse.prototype.startLighthouse = async function (pageName, lighthouse_opts, driver, simulation) {
     var outer_this = this;
-        return await driver.getCurrentUrl()
-            .then(url => outer_this.runLighthouse(url, lighthouse_opts)
-                .then(results => outer_this.saveLighthouse(results, pageName, simulation)))
+    return await driver.getCurrentUrl()
+        .then(url => outer_this.runLighthouse(url, lighthouse_opts).catch((err) => { console.log(err) })
+        .then(results => outer_this.saveLighthouse(results, pageName, simulation)))
 }
 
+Lighthouse.prototype.startAnalyse = async function (pageName, lighthouse_opts, desktop, mobile, driver, simulation) {
+    var outer_this = this
+    if (lighthouse_opts.desktop) {
+        var fileName = pageName + '_desktop'
+        await outer_this.startLighthouse(fileName, desktop, driver, simulation)
+    }
+    if (lighthouse_opts.mobile) {
+        var fileName = pageName + '_mobile'
+        await outer_this.startLighthouse(fileName, mobile, driver, simulation)
+    }
+}
 module.exports = Lighthouse;

@@ -14,14 +14,11 @@
    limitations under the License.
 */
 
-const {
-    Builder,
-    By
+const { By,
+    Builder
 } = require('selenium-webdriver')
 
 require('chromedriver');
-
-const testSteps = 'steps'
 
 var Waiter = require("./waiters")
 var Lighthouse = require('./lighthouse')
@@ -32,37 +29,50 @@ var PageStepsBuilder = require('./execution_module/page_steps_builder')
 
 var JUnitBuilder = require('./junit_reporter')
 var lightHouseArr
-var triggerForInfluxConfig
+var driver
+var baseUrl
+var scenarioIter
 
-function ScenarioBuilder(test_name, influxConfig, reportPortalConfig, lightHouseDevice, suite, preSettedGlobalUserVariable) {
+function ScenarioBuilder(test_name, influxConfig, reportPortalConfig, lightHouseDevice, suite) {
     this.testName = test_name.replace(/\.y.?ml/g, '')
-    if (influxConfig && influxConfig['url'] != null) {
-        triggerForInfluxConfig = true;
-    }
-    else {
-        triggerForInfluxConfig = false;
-    }
-    this.logger = new Logger(influxConfig, this.testName, triggerForInfluxConfig, suite)
+    this.logger = new Logger(influxConfig, this.testName, suite)
     if (reportPortalConfig) {
         this.rp = reportPortalConfig
     }
     this.junit = new JUnitBuilder(this.testName)
 
     this.lighthouse = new Lighthouse()
+    this.driver = new Builder().withCapabilities(browserCapabilities)
+        .setAlertBehavior('accept')
+        .forBrowser('chrome').build();
+    this.waiter = new Waiter(this.driver)
     lightHouseArr = lightHouseDevice
-    globalUserVariablesStore = preSettedGlobalUserVariable || {}
 }
 
-const lighthouse_opts = {
+ScenarioBuilder.prototype.InitDriver = async function () {
+    var outer_this = this
+    await outer_this.driver.get("chrome://version");
+    let element = await outer_this.driver.findElement(By.id('command_line'));
+    let text = await element.getText();
+    var splitStr = text.split(" ");
+    let port = 0
+    splitStr.filter(function (word, index) {
+        if (word.match(/--remote-debugging-port=*/)) {
+            port = Number(word.split('=')[1]);
+            lighthouseOptionsDesktop.port = port;
+            lighthouseOptionsMobile.port = port;
+        } else { }
+    });
+}
+
+var lighthouseOptionsDesktop = {
     chromeFlags: ['--show-paint-rects', '--window-size=1440,900'],
-    disableDeviceEmulation: true
-};
-
-const lighthouse_opts_mobile = {
+    "disableDeviceEmulation": true
+}
+var lighthouseOptionsMobile = {
     chromeFlags: ['--show-paint-rects', '--window-size=1440,900']
-};
-
-const capabilities = {
+}
+const browserCapabilities = {
     "browserName": 'chrome',
     "chromeOptions": {
         "args": ["--window-size=1440,900", "--disable-dev-shm-usage", "--no-sandbox"],
@@ -70,49 +80,62 @@ const capabilities = {
     }
 }
 
-ScenarioBuilder.prototype.TestStepsExecute = async function (driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, iteration, scenarioIter, targetUrl) {
+ScenarioBuilder.prototype.TestStepsExecute = async function (page_name, urlWithParameter, parameters, page, stepList, iteration) {
     var page_name = page_name.replace(/[^a-zA-Z0-9_]+/g, '_')
     var lh_name = `${page_name}_lh_${iteration}`
     var outer_this = this;
-    await driver.sleep(200)
+    if (urlWithParameter) {
+        var baseUrl = urlWithParameter
+    } else {
+        var baseUrl = outer_this.baseUrl
+    }
+    var pageCheck
+    if (page['check'] != undefined || page['check'] != null) {
+        pageCheck = page['check']
+    } else {
+        pageCheck = null
+    }
+    await outer_this.driver.sleep(200)
         .then(() => { console.log("\nOpening %s TestCase (%d)", page_name, iteration) })
-        .then(() => outer_this.ExecuteTest(driver, scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl))
+        .then(() => outer_this.ExecuteTest(baseUrl, pageCheck, stepList))
         .catch((error) => { return error })
-        .then((error) => outer_this.ResultReport(driver, page_name, baseUrl, parameters, lh_name, error))
+        .then((error) => outer_this.ResultReport(page_name, baseUrl, parameters, lh_name, error))
 }
 
 /// Method which executing list of steps
-ScenarioBuilder.prototype.ExecuteTest = async function (driver, scenarioIter, baseUrl, pageCheck, stepList, waiter, targetUrl) {
+ScenarioBuilder.prototype.ExecuteTest = async function (baseUrl, pageCheck, stepList) {
     var locator;
     var actionStep;
+    var outer_this = this
+    var previousUrl = outer_this.previousUrl
 
-    if (scenarioIter == 0 || targetUrl != baseUrl) {
-        await driver.get(baseUrl)
+    if (scenarioIter == 1 || previousUrl != baseUrl) {
+        await outer_this.driver.get(baseUrl)
     }
     for (let step in stepList) {
         actionStep = stepList[step]
         locator = await WebDriverActionWrapper.GetWebElementLocator(actionStep)
         switch (actionStep[0]) {
             case 'input':
-                await WebDriverActionWrapper.ExecuteInput(driver, locator, actionStep[3])
+                await WebDriverActionWrapper.ExecuteInput(outer_this.driver, locator, actionStep[3])
                 break;
             case 'check':
-                await WebDriverActionWrapper.ExecuteCheckIsPresent(waiter, locator)
+                await WebDriverActionWrapper.ExecuteCheckIsPresent(outer_this.waiter, locator)
                 break;
             case 'checkIsNot':
-                await WebDriverActionWrapper.ExecuteCheckIsNotPresent(waiter, locator)
+                await WebDriverActionWrapper.ExecuteCheckIsNotPresent(outer_this.waiter, locator)
                 break;
             case 'click':
-                await WebDriverActionWrapper.ExecuteClick(driver, locator)
+                await WebDriverActionWrapper.ExecuteClick(outer_this.driver, locator)
                 break;
             case 'switchToFrame':
-                await WebDriverActionWrapper.ExecuteSwitchToFrame(driver, locator)
+                await WebDriverActionWrapper.ExecuteSwitchToFrame(outer_this.driver, locator)
                 break;
             case 'switchToDefault':
-                await WebDriverActionWrapper.ExecuteSwitchToDefaultContent(driver)
+                await WebDriverActionWrapper.ExecuteSwitchToDefaultContent(outer_this.driver)
                 break;
             case 'url':
-                await WebDriverActionWrapper.ExecuteNavigateToUrl(driver, actionStep[1])
+                await WebDriverActionWrapper.ExecuteNavigateToUrl(outer_this.driver, actionStep[1])
                 break;
             default:
                 break;
@@ -120,151 +143,110 @@ ScenarioBuilder.prototype.ExecuteTest = async function (driver, scenarioIter, ba
     }
     if (pageCheck != null || pageCheck != undefined) {
         locator = await WebDriverActionWrapper.GetWebElementLocator(pageCheck)
-        await WebDriverActionWrapper.ExecuteCheckIsPresent(waiter, locator)
+        await WebDriverActionWrapper.ExecuteCheckIsPresent(outer_this.waiter, locator)
     }
-    sesionCookie = await WebDriverActionWrapper.GetSessionCookie(driver);
 }
 
-ScenarioBuilder.prototype.ResultReport = async function (driver, pageName, pageUrl, parameter, lh_name, error) {
+ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, parameter, lh_name, error) {
     var outer_this = this;
     var isAction
+    var status
+
     if (error) {
         console.log(`Test Case ${pageName} failed.`)
         await outer_this.junit.failCase(pageName, error)
+        if (!outer_this.rp) {
+            await utils.takeScreenshot(driver, `${pageName}_Failed`)
+        }
+        if (outer_this.logger) {
+            status = 'ko'
+            await outer_this.logger.logError(error, pageUrl, pageName, parameter)
+            isAction = await outer_this.logger.logInfo(outer_this.driver, pageName, status)
+        }
+        if (!isAction && (lightHouseArr != undefined || lightHouseArr != null)) {
+            try {
+                await outer_this.lighthouse.startAnalyse(lh_name, lightHouseArr, lighthouseOptionsDesktop, lighthouseOptionsMobile, outer_this.driver, outer_this.testName)
+            }
+            catch (error) {
+                console.log(error.friendlyMessage)
+            }
+        }
+        if (outer_this.rp) {
+            await outer_this.rp.reportIssue(error, pageUrl, parameter, pageName, outer_this.driver, lightHouseArr, lh_name)
+        }
     }
     else {
         console.log(`Starting Analyse ${pageName}.`)
         await outer_this.junit.successCase(pageName)
-    }
-    if (!outer_this.rp) {
-        if (error) {
-            await utils.takeScreenshot(driver, `${pageName}_Failed`)
-        }
-        else {
+        if (!outer_this.rp) {
             await utils.takeScreenshot(driver, pageName)
         }
-    }
-    if (outer_this.logger) {
-        if (error) {
-            var status = 'ko'
-            await outer_this.logger.logError(error, pageUrl, pageName, parameter)
-            await outer_this.logger.logInfo(driver, pageName, status)
+        if (outer_this.logger) {
+            status = 'ok'
+            isAction = await outer_this.logger.logInfo(outer_this.driver, pageName, status)
+            await outer_this.driver.executeScript('performance.clearResourceTimings()');
         }
-        else {
-            var status = 'ok'
-            isAction = await outer_this.logger.logInfo(driver, pageName, status)
-            await driver.executeScript('performance.clearResourceTimings()');
-        }
-    }
-    if (!isAction) {
-        if (lightHouseArr != undefined || lightHouseArr != null) {
-            if (lightHouseArr['mobile']) {
-                var lh_name_mobile = lh_name + "_mobile"
-                await outer_this.lighthouse.startLighthouse(lh_name_mobile, lighthouse_opts_mobile, driver, this.testName);
+        if (!isAction && (lightHouseArr != undefined || lightHouseArr != null)) {
+            try {
+                await outer_this.lighthouse.startAnalyse(lh_name, lightHouseArr, lighthouseOptionsDesktop, lighthouseOptionsMobile, outer_this.driver, outer_this.testName)
             }
-            if (lightHouseArr['desktop']) {
-                var lh_name_desktop = lh_name + "_desktop"
-                await outer_this.lighthouse.startLighthouse(lh_name_desktop, lighthouse_opts, driver, this.testName);
+            catch (error) {
+                console.log(error.friendlyMessage)
             }
         }
-    }
-    if (outer_this.rp) {
-        if (error) {
-            await outer_this.rp.reportIssue(error, pageUrl, parameter, pageName, driver, lh_name_mobile, lh_name_desktop)
-        }
-        else {
-            await outer_this.rp.reportResult(pageName, pageUrl, parameter, driver, lh_name_mobile, lh_name_desktop)
+        if (outer_this.rp) {
+            await outer_this.rp.reportResult(pageName, pageUrl, parameter, outer_this.driver, lightHouseArr, lh_name)
         }
     }
-}
-
-ScenarioBuilder.prototype.getSession = function (sessionState, url, cookieJar, reqOptions) {
-    if (sessionState.length > 1) {
-        for (let cookie in sessionState) {
-            cookieJar.setCookie(sessionState[cookie], url)
-        }
-    }
-    else {
-        cookieJar.setCookie(sessionState, url)
-    }
-    reqOptions.jar = cookieJar
-    return reqOptions
 }
 
 ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times) {
     var outer_this = this;
-    var driver
-    var waiter
     var test_name = outer_this.testName
-    var scenarioIter = 0;
-    var baseUrl
-    var additionalUrl
 
+    outer_this.InitDriver()
     try {
         console.log(`\n${test_name} test, iteration ${globalIteration}`)
+        outer_this.scenarioIter = 1
         for (let page_name in scenario) {
 
             var stepList = []
             var page = scenario[page_name]
-            var pageSteps = page[testSteps]
             var parameters = page['parameters']
-            var pageUrlWithParameters
-            var pageCheck
-            
+
             if (page['url'] != null || page['url'] != undefined) {
-                baseUrl = page['url']
+                outer_this.baseUrl = page['url']
             }
-            if (page['check'] != null || page['check']) {
-                pageCheck = page['check']
-            } else {
-                pageCheck = null;
-            }
-            stepList = PageStepsBuilder.StepListForExecution(pageSteps)
-            
-            if (driver == undefined || driver == null) {
-                driver = new Builder().withCapabilities(capabilities)
-                    .setAlertBehavior('accept')
-                    .forBrowser('chrome').build();
-                await driver.get("chrome://version");
-                let element = await driver.findElement(By.id('command_line'));
-                let text = await element.getText();
-                var splitStr = text.split(" ");
-                let port = 0
-                splitStr.filter(function (word, index) {
-                    if (word.match(/--remote-debugging-port=*/)) {
-                        port = Number(word.split('=')[1]);
-                        lighthouse_opts.port = port;
-                        lighthouse_opts_mobile.port = port;
-                    } else { }
-                });
-                waiter = new Waiter(driver)
-            }
+            stepList = PageStepsBuilder.StepListForExecution(page['steps'])
 
             if (parameters != null || parameters != undefined) {
+
                 if (parameters.length > 1) {
                     var paramIterator = 1
                     for (let parameter of parameters) {
-                        pageUrlWithParameters = baseUrl + parameter
+                        var urlWithParameter = outer_this.baseUrl + parameter
                         pageNameWithParameter = page_name + "_" + paramIterator
-                        await outer_this.TestStepsExecute(driver, pageNameWithParameter, pageUrlWithParameters, parameter, pageCheck, stepList, waiter, globalIteration, scenarioIter, additionalUrl)
+                        await outer_this.TestStepsExecute(pageNameWithParameter, urlWithParameter, parameter, page, stepList, globalIteration)
                         paramIterator += 1
+                        outer_this.scenarioIter += 1
+                        outer_this.previousUrl = outer_this.baseUrl
                     }
-
                 } else {
-                    pageUrlWithParameters = baseUrl + parameters
-                    await outer_this.TestStepsExecute(driver, page_name, pageUrlWithParameters, parameters, pageCheck, stepList, waiter, globalIteration, scenarioIter, additionalUrl)
+                    var urlWithParameter = outer_this.baseUrl + parameters
+                    await outer_this.TestStepsExecute(page_name, urlWithParameter, parameters, page, stepList, globalIteration)
+                    outer_this.scenarioIter += 1
+                    outer_this.previousUrl = outer_this.baseUrl
                 }
             }
             else {
-                await outer_this.TestStepsExecute(driver, page_name, baseUrl, parameters, pageCheck, stepList, waiter, globalIteration, scenarioIter, additionalUrl)
+                await outer_this.TestStepsExecute(page_name, null, parameters, page, stepList, globalIteration)
+                outer_this.scenarioIter += 1
+                outer_this.previousUrl = outer_this.baseUrl
             }
             await utils.sleep(3)
-            scenarioIter += 1
-            additionalUrl = baseUrl
-            globalUserVariablesStore = {}
         }
     } catch (error) {
-        console.log(error)
+        console.log(error.message)
         outer_this.junit.errorCase(error)
     } finally {
         if (globalIteration == (times)) {
@@ -273,10 +255,10 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
             }
             outer_this.junit.writeXml()
             utils.sleep(5)
-            console.info("Congrats, test is done.")
+            console.info("\nCongrats, test is done.")
         }
-        if (driver) {
-            driver.quit();
+        if (outer_this.driver) {
+            outer_this.driver.quit();
         }
     }
 }

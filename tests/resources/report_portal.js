@@ -21,7 +21,7 @@ var utils = require('./utils')
 function ReportPortal(config) {
     this.rpClient = new RPClient({
         token: config['rp_token'],
-        endpoint: "https://"+ config['rp_host']+ "/api/v1",
+        endpoint: "https://" + config['rp_host'] + "/api/v1",
         project: config['rp_project_name'],
         debug: false
     });
@@ -101,7 +101,7 @@ ReportPortal.prototype.sendTestLogWithFile = function (step, file_path, file_nam
     })
 }
 
-ReportPortal.prototype.reportIssue =async function (error, domain, url_path, page_name, driver, lh_name_mobile, lh_name_desktop) {
+ReportPortal.prototype.reportIssue = async function (error, domain, url_path, page_name, driver, lh_opt, lh_name) {
     var outer_this = this;
     var status = 'ko';
     var err_message = "Open " + page_name + " failed"
@@ -115,13 +115,13 @@ ReportPortal.prototype.reportIssue =async function (error, domain, url_path, pag
         .then(() => outer_this.sendTestLogWithFile(step, outer_this.image_path, `${image_name}.png`, "image/png", `Screenshot: ${image_name}.png`))
         .catch(error => console.log("Failed to load screenshot.\n" + error))
         .then(() => {
-            if (lh_name_mobile != null || lh_name_mobile != undefined) { 
-                outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name_mobile}.html`, "text/xml", `Lighthouse result: ${lh_name_mobile}.html`) 
-            }
-        })
-        .then(() => {
-            if (lh_name_desktop != null || lh_name_desktop != undefined) { 
-                outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name_desktop}.html`, "text/xml", `Lighthouse result: ${lh_name_desktop}.html`) 
+            if (lh_opt != null || lh_opt != undefined) {
+                if (lh_opt.mobile) {
+                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_mobile.html`, "text/xml", `Lighthouse result: ${lh_name}_mobile.html`)
+                }
+                if (lh_opt.desktop) {
+                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_desktop.html`, "text/xml", `Lighthouse result: ${lh_name}_desktop.html`)
+                }
             }
         })
         .then(() => outer_this.sendTestLog(step, 'ERROR', error_id))
@@ -142,7 +142,7 @@ ReportPortal.prototype.reportIssue =async function (error, domain, url_path, pag
     })
 }
 
-ReportPortal.prototype.reportResult =async function (page_name, url, path, driver, lh_name_mobile, lh_name_desktop) {
+ReportPortal.prototype.reportResult = async function (page_name, url, path, driver, lh_opt, lh_name) {
     var outer_this = this;
     var tmp = new Date().getTime();
     var image_name = `${page_name}_${tmp}`
@@ -159,43 +159,17 @@ ReportPortal.prototype.reportResult =async function (page_name, url, path, drive
         })
         .then(() => outer_this.sendTestLogWithFile(step, outer_this.image_path, `${image_name}.png`, "image/png", `Screenshot: ${image_name}.png`))
         .then(() => {
-            if (lh_name_mobile != null || lh_name_mobile != undefined) { 
-                outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name_mobile}.html`, "text/xml", `Lighthouse result: ${lh_name_mobile}.html`) 
-            }
-        })
-        .then(() => {
-            if (lh_name_desktop != null || lh_name_desktop != undefined) { 
-                outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name_desktop}.html`, "text/xml", `Lighthouse result: ${lh_name_desktop}.html`) 
+            if (lh_opt != null || lh_opt != undefined) {
+                if (lh_opt.mobile) {
+                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_mobile.html`, "text/xml", `Lighthouse result: ${lh_name}_mobile.html`)
+                }
+                if (lh_opt.desktop) {
+                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_desktop.html`, "text/xml", `Lighthouse result: ${lh_name}_desktop.html`)
+                }
             }
         })
         .then(() => outer_this.finishItem(step.tempId, 'passed'))
 
 }
-ReportPortal.prototype.successCall = async function (res, page_name){
-    var outer_this = this;
-    var page_name = page_name.replace(/[^a-zA-Z0-9_]+/g, '_')
-    var step = outer_this.startItem(page_name, `Result for ${page_name}`, [page_name])
 
-    await outer_this.sendTestLog(step, 'INFO', `Request name: ${page_name}`)
-            .then(() => outer_this.sendTestLog(step, 'INFO', `Response Code: ${res.statusCode}`))
-            .then(() => outer_this.sendTestLog(step, 'INFO', `Response Message: ${res.statusMessage}`))
-            .then(() => outer_this.sendTestLog(step, 'INFO', `Response Time: ${res.elapsedTime} ms`))
-            .then(() => outer_this.finishItem(step.tempId, 'passed'))
-}
-ReportPortal.prototype.failedCall = async function (res, page_name){
-    var outer_this = this;
-    var page_name = page_name.replace(/[^a-zA-Z0-9_]+/g, '_')
-    var err_message = "Call " + page_name + " failed"
-    var step = outer_this.startItem(page_name, err_message, [page_name])
-    var errorMes = JSON.stringify(res.error)
-    if (errorMes != undefined || errorMes != null){
-        errorMes = errorMes.replace(/"/g, '\\"')
-    }
-
-    await outer_this.sendTestLog(step, 'ERROR', `Request name: ${page_name}`)
-            .then(() => outer_this.sendTestLog(step, 'ERROR', `Response Code: ${res.statusCode}`))
-            .then(() => outer_this.sendTestLog(step, 'WARN', `Response Message: ${errorMes}`))
-            .then(() => outer_this.sendTestLog(step, 'WARN', `Response Time: ${res.response.elapsedTime} ms`))
-            .then(() => outer_this.finishItem(step.tempId, 'failed'))
-}
 module.exports = ReportPortal;

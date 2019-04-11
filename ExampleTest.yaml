@@ -15,25 +15,6 @@ lighthouseDeviceEmulate:
  mobile: true
  desktop: true
 
-DEMO_USER_VARIABLE:                 # USER VARIABLE
-    BASE_URL: &BASE_URL https://perf-ui.getsandbox.com
-    headers: &HEADERS
-        perf-ui-header: perf-ui-header
-        accept: application/json
-        content-type: text/plain
-    DemoQueryPair: &GETPARAM
-        - {q: "carrier-io", oq: "carrier-io"}
-        - {q: "perf-ui", oq: "perf-ui" }
-    DemoBodyPair: &GETBODY
-        - test
-        - test2
-    DemoJsonBody: &POSTBODY
-        - {user: "test", pass: "pass"}
-        - {user: "test2", pass: "pass2" }
-    DemoXform: &POSTFORM
-        - {username: "test"}
-        - {username2: "test2"}
-
 Demo:
     AmazonSearchWithParameters:
         url: https://www.amazon.com/s?k=
@@ -52,46 +33,3 @@ Demo:
                 xpath: //div[@id="issDiv4"]
             - click:
                 xpath: //div[@id="issDiv4"]
-    # DEMO REST Call
-    DemoAPI#1:
-        method: GET
-        url: *BASE_URL
-        path: /testGET
-        headers: *HEADERS
-        parameters: *GETPARAM
-    DemoAPI#2:
-        method: GET
-        url: *BASE_URL
-        path: /testGETbody
-        headers: *HEADERS
-        body: *GETBODY
-    DemoAPI#3:
-        method: POST
-        url: *BASE_URL
-        path: /testPOST
-        body: *POSTBODY
-    DemoAPI#4:
-        method: POST
-        url: *BASE_URL
-        path: /testPOSTform
-        form: *POSTFORM
-    DemoAPI#5:
-        method: PUT
-        url: *BASE_URL
-        path: /testPUT
-        body: *POSTBODY
-    DemoAPI#6:
-        method: DELETE
-        url: *BASE_URL
-        headers: *HEADERS
-        path: /testDELETE
-    DemoAPI#7:
-        method: OPTIONS
-        url: *BASE_URL
-        path: /testOPTIONS
-        headers: *HEADERS
-    DemoAPI#8:
-        method: HEAD
-        url: *BASE_URL
-        path: /testHEAD
-        headers: *HEADERS

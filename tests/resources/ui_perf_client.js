@@ -72,33 +72,37 @@ function measureActionTime(resourceTimingObj) {
     return end - start;
 }
 
-function rawTimingForAction(resourceTimingObj){
+function rawTimingForAction(resourceTimingObj) {
     lastIndex = resourceTimingObj.length - 1
 
-    var result = {
-        "connectEnd": resourceTimingObj[lastIndex].connectEnd,
-        "connectStart": resourceTimingObj[0].connectStart,
-        "domComplete": 0,
-        "domContentLoadedEventEnd": 0,
-        "domContentLoadedEventStart": 0,
-        "domInteractive": 0,
-        "domLoading": 0,
-        "domainLookupEnd": resourceTimingObj[lastIndex].domainLookupEnd,
-        "domainLookupStart": resourceTimingObj[lastIndex].domainLookupStart,
-        "fetchStart": 0,
-        "loadEventEnd": resourceTimingObj[lastIndex].responseEnd,
-        "loadEventStart": 0,
-        "navigationStart": resourceTimingObj[0].startTime,
-        "redirectEnd": 0,
-        "redirectStart": 0,
-        "requestStart": 0,
-        "responseEnd": 0,
-        "responseStart": resourceTimingObj[lastIndex].responseStart,
-        "secureConnectionStart": 0,
-        "unloadEventEnd": 0,
-        "unloadEventStart": 0
+    if (resourceTimingObj[lastIndex] == undefined || resourceTimingObj[0] == undefined) {
+        return {}
     }
-    return result
+    else {
+        return {
+            "connectEnd": resourceTimingObj[lastIndex].connectEnd,
+            "connectStart": resourceTimingObj[0].connectStart,
+            "domComplete": 0,
+            "domContentLoadedEventEnd": 0,
+            "domContentLoadedEventStart": 0,
+            "domInteractive": 0,
+            "domLoading": 0,
+            "domainLookupEnd": resourceTimingObj[lastIndex].domainLookupEnd,
+            "domainLookupStart": resourceTimingObj[lastIndex].domainLookupStart,
+            "fetchStart": 0,
+            "loadEventEnd": resourceTimingObj[lastIndex].responseEnd,
+            "loadEventStart": 0,
+            "navigationStart": resourceTimingObj[0].startTime,
+            "redirectEnd": 0,
+            "redirectStart": 0,
+            "requestStart": 0,
+            "responseEnd": 0,
+            "responseStart": resourceTimingObj[lastIndex].responseStart,
+            "secureConnectionStart": 0,
+            "unloadEventEnd": 0,
+            "unloadEventStart": 0
+        }
+    }
 }
 
 function compare(a, b) {
@@ -112,13 +116,23 @@ UIPerformanceClient.prototype.parsePerfData = function (data, isFrame) {
     let perfTiming = data.timing;
     let navTiming = this.perfNavTiming;
     delete perfTiming.toJSON;
-    
+
     let actionDuration = measureActionTime(lastPerfResourceTiming)
     let formattedPerfTiming = formatPerformanceTimingObject(perfTiming);
     let formattedPerfTimingAction = formatPerformanceTimingObjectAction(actionDuration);
 
     let currentLastResourceIndex = lastPerfResourceTiming.length - 1;
-    let parsedURL = utils.parseURL(lastPerfNavTiming.name);
+    let parsedURL
+    try {
+        parsedURL = utils.parseURL(lastPerfNavTiming.name);
+    }
+    catch (error) {
+        console.error('Cant parse url. This site can’t be reached')
+        parsedURL = {
+            domain: null,
+            path: null
+        }
+    }
 
     let transferSize = lastPerfNavTiming.transferSize;
     let encodedBodySize = lastPerfNavTiming.encodedBodySize;
@@ -128,7 +142,7 @@ UIPerformanceClient.prototype.parsePerfData = function (data, isFrame) {
         navTiming = this.perfFrameTiming;
     }
 
-    if (compare(navTiming, lastPerfNavTiming) || compare(this.perfFrameTiming, lastPerfNavTiming)) {         
+    if (compare(navTiming, lastPerfNavTiming) || compare(this.perfFrameTiming, lastPerfNavTiming)) {
         if (isFrame) {
             this.lastFrameIndex = currentLastResourceIndex;
         } else {
@@ -140,7 +154,7 @@ UIPerformanceClient.prototype.parsePerfData = function (data, isFrame) {
         return {
             'navigation': lastPerfNavTiming,
             'timing': actionTiming,
-            'resource':  lastPerfResourceTiming, //shiftResourceTimings(resourceDiff),
+            'resource': lastPerfResourceTiming, //shiftResourceTimings(resourceDiff),
             'formattedTiming': formattedPerfTimingAction,
             'domain': parsedURL.domain,
             'url': parsedURL.path,
