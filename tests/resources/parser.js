@@ -14,7 +14,6 @@
    limitations under the License.
 */
 
-yaml = require('js-yaml');
 fs = require('fs');
 cookie = require('cookie-parse');
 $RefParser = require('json-schema-ref-parser');
