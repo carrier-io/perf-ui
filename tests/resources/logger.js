@@ -16,19 +16,19 @@
 
 var InfluxDB = require('influxdb-nodejs');
 var UIPerformanceClient = require('./ui_perf_client');
-var Lighthouse = require('./lighthouse');
 var utils = require('./utils')
 
-function Logger(influx_conf, scenario, triger, suite) {
+function Logger(influx_conf, scenario, suite) {
 
-    this.triger = triger;
-    if (triger){
+    if (influx_conf) {
         var influx_host = influx_conf['url'] + influx_conf['db_name']
         if (influx_conf['user'] && influx_conf['password']) {
             influx_host = influx_host.replace(/:\/\//g, `://${influx_conf['user']}:${influx_conf['password']}@`)
         }
         this.client = new InfluxDB(influx_host);
     }
+
+
     this.perf_client = new UIPerformanceClient();
     this.scenario = scenario;
     this.build_id = scenario + "_" + Date.now();
@@ -44,34 +44,22 @@ Logger.prototype.logInfo = async function (driver, pageName, status, isAlert = f
 
 Logger.prototype.logError = function (error, domain, pageName, url) {
     var outer_this = this;
-    var status = 'ko';
     var message = "Open " + pageName + " failed."
 
-    return new Promise(function (resolve, reject) {
-        var tags = {
-            'test_type': 'ui'
-        };
-        var fields = {
-            'request_name': pageName,
-            'domain': domain,
-            'path': utils.formatString(url),
-            'scenario': outer_this.scenario,
-            'error_type': defineErrorType(pageName, error.toString()),
-            'error_details': utils.formatString(error),
-            'error_message': message
-        };
-        if (outer_this.client != undefined || outer_this.client != null) {
-            outer_this.client.write('errors').tag(tags).field(fields).queue();
-            outer_this.client.syncWrite()
-                .then(() => {
-                    resolve(status);
-                })
-                .catch(error => {
-                    console.log(error);
-                    resolve(status);
-                })
-        }
-    })
+    var tags = { 'test_type': 'ui' }
+    var fields = {
+        'request_name': pageName,
+        'domain': domain,
+        'path': utils.formatString(url),
+        'scenario': outer_this.scenario,
+        'error_type': defineErrorType(pageName, error.toString()),
+        'error_details': utils.formatString(error),
+        'error_message': message
+    };
+    if (outer_this.client != undefined || outer_this.client != null) {
+        outer_this.client.write('errors').tag(tags).field(fields).queue();
+        outer_this.client.syncWrite().catch((error) => { console.log(error) });
+    }
 }
 
 function defineErrorType(pageName, errorMessage) {
@@ -143,7 +131,7 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
             }
 
             data = data.concat(datacell);
-            if (outer_this.client != undefined || outer_this.client != null){
+            if (outer_this.client != undefined || outer_this.client != null) {
                 outer_this.client.write(data[0]).tag(data[1]).field(data[2]).queue();
                 outer_this.client.syncWrite().catch((error) => { console.log(error) });
             }
@@ -151,85 +139,6 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
         })
     });
 };
-
-Logger.prototype.apiCallSuccess = function (call, callName){
-    console.log('ResponseCode: ' + call.statusCode)
-    outer_this = this;
-    var req = call.request
-    var callField = {
-        timingStart: call.timingStart,
-        elapsedTime: call.elapsedTime,
-        socket: call.timings.socket,
-        lookup: call.timings.lookup,
-        connect: call.timings.connect,
-        response: call.timings.response,
-        end: call.timings.end,
-        wait: call.timingPhases.wait,
-        dns: call.timingPhases.dns,
-        tcp: call.timingPhases.tcp,
-        firstByte: call.timingPhases.firstByte,
-        download: call.timingPhases.download,
-        total: call.timingPhases.total,
-        method: call.request.method,
-        statusCode: call.statusCode,
-        statusMess: call.statusMessage,
-        count: 1
-    }
-    var callTag = {
-        domain: req.uri.hostname,
-        callName: callName,
-        build_id: outer_this.build_id,
-        start_time: outer_this.start_time,
-        suite: outer_this.suite,
-        status: 'ok'
-    }
-    outer_this.client.write('apiperf').tag(callTag).field(callField).queue();
-    outer_this.client.syncWrite().catch((error) => { console.log(error) });
-}
-Logger.prototype.apiCallFail = function (call, callName){
-    console.log('ResponseCode: ' + call.statusCode)
-    outer_this = this;
-    var errorMes = JSON.stringify(call.error)
-    if (errorMes != undefined || errorMes != null){
-        errorMes = errorMes.replace(/"/g, "\'")
-    }
-    var req = call.request
-    var callField = {
-        timingStart: call.response.timingStart,
-        elapsedTime: call.response.elapsedTime,
-        socket: call.response.timings.socket,
-        lookup: call.response.timings.lookup,
-        connect: call.response.timings.connect,
-        response: call.response.timings.response,
-        end: call.response.timings.end,
-        wait: call.response.timingPhases.wait,
-        dns: call.response.timingPhases.dns,
-        tcp: call.response.timingPhases.tcp,
-        firstByte: call.response.timingPhases.firstByte,
-        download: call.response.timingPhases.download,
-        total: call.response.timingPhases.total,
-        method: call.response.request.method,
-        statusCode: call.statusCode,
-        statusMess: errorMes,
-        count: 1
-    }
-    var callTag = {
-        domain: (call.response.request.host).toString(),
-        callName: callName,
-        build_id: outer_this.build_id,
-        start_time: outer_this.start_time,
-        suite: outer_this.suite,
-        status: 'ko'
-    }
-    var errField = {
-        method: call.response.request.method,
-        statusCode: call.statusCode,
-        statusMess: errorMes
-    }
-    outer_this.client.write('apiperf').tag(callTag).field(callField).queue();
-    outer_this.client.write("errorsapi").tag(callTag).field(errField).queue();
-    outer_this.client.syncWrite().catch((error) => { console.log(error) });
-}
 
 function sleep(time) {
     var stop = new Date().getTime();

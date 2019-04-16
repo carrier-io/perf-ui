@@ -111,48 +111,25 @@ Demo:                                         # Test Suite
       - url: https://www.etsy.com                       # Open URL Action (Navigate to a specified page.)
 
       - input:                                        # Input Action (Entering data into specified field)
-          xpath: //input[@id='search-query']            # locator for WebElement (You can use "xpath" or "css" type of locators)
+          xpath: //input[@id='search-query']            # locator for WebElement (You can use "xpath,css,id,name,class" type of locators)
           value: shirt                                  # data which you want to enter
 
       - check:                                        # Check Action (check page state or WebElement state)
-          xpath: //button[@value='Search']              # locator for WebElement (You can use "xpath" or "css" type of locators)
+          xpath: //button[@value='Search']              # locator for WebElement (You can use "xpath,css,id,name,class" type of locators)
 
       - checkIsNot:                                     # Check Element is Not Visible Action (check page state or WebElement state)
-          xpath: //button[@value='Search']              # locator for WebElement (You can use "xpath" or "css" type of locators)
+          xpath: //button[@value='Search']              # locator for WebElement (You can use "xpath,css,id,name,class" type of locators)
 
       - click:                                        # Click Action (Click specified WebElement)
-          xpath: //button[@value='Search']              # locator for WebElement (You can use "xpath" or "css" type of locators)
+          xpath: //button[@value='Search']              # locator for WebElement (You can use "xpath,css,id,name,class" type of locators)
 
       - switchToFrame:                                # Switch To Frame Action (Switch to specified frame) 
-          id: exampleIframe                             # locator for Frame (You can use "xpath","css","id" type of locators)
+          id: 2                                         # locator for Frame (You can use "xpath","css","id" type of locators)
 
       - switchToDefault: true                         # Switch To Default Action (Switch to default content) 
 
-  DemoREST:                                     # Request
-
-        method: GET                                 # Request method (GET|POST|PUT|DELETE|HEAD|OPTION)
-        url: https://www.google.com                                # Call URL
-        path: /search                                              # URL path
-        headers:                                                   # Request headers
-            accept: text/html,application/xml
-            accept-encoding: gzip, deflate, br
-            accept-language: ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7                                         
-        
-                                                    #OPTIONAL Parameters
-        parameters:                                                # Request query (for GET method)
-            - {q: "carrier-io", oq: "carrier-io"}                   
-            - {q: "gatling", oq: "gatling"}
-        
-        body:                                                       #Request body example for GET method
-            - Your body
-        
-        body:                                                       #Request body example for POST/PUT method
-            - {user: "test", pass: "pass"}
-
-        form:                                                       #Request for example for POST/PUT method
-            - {user: "test", pass: "pass"}
-
-      
+    check:                                         # Same as Check Action, you would using when you need simple condition check in open page
+        xpath: //div[@class='a-section a-spacing-small a-spacing-top-small']
 ```
 
 _______________________

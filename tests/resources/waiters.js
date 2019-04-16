@@ -29,7 +29,7 @@ Waiter.prototype.waitFor = async function (locator, timeout) {
     return webelement
 };
 
-Waiter.prototype.waitUntilVisible =async function (webelement, timeout) {
+Waiter.prototype.waitUntilVisible = async function (webelement, timeout) {
     var waitTimeout = timeout || globalTimeout;
     await this.driver.wait(until.elementIsVisible(webelement), waitTimeout)
 };
@@ -39,7 +39,7 @@ Waiter.prototype.waitUntilNotVisible = async function (webelement, timeout) {
     await this.driver.wait(until.elementIsNotVisible(webelement), waitTimeout)
 };
 
-Waiter.prototype.findElement =async function (locator) {
+Waiter.prototype.findElement = async function (locator) {
     await this.driver.findElement(locator);
 };
 
