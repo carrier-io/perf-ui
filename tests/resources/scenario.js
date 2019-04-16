@@ -156,7 +156,7 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
         console.log(`Test Case ${pageName} failed.`)
         await outer_this.junit.failCase(pageName, error)
         if (!outer_this.rp) {
-            await utils.takeScreenshot(driver, `${pageName}_Failed`)
+            await utils.takeScreenshot(outer_this.driver, `${pageName}_Failed`)
         }
         if (outer_this.logger) {
             status = 'ko'
@@ -179,7 +179,7 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
         console.log(`Starting Analyse ${pageName}.`)
         await outer_this.junit.successCase(pageName)
         if (!outer_this.rp) {
-            await utils.takeScreenshot(driver, pageName)
+            await utils.takeScreenshot(outer_this.driver, pageName)
         }
         if (outer_this.logger) {
             status = 'ok'
