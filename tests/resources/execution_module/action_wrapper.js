@@ -49,6 +49,7 @@ module.exports = {
     ExecuteCheckIsPresent: async function (waiter, locator) {
         await waiter.waitFor(locator).then((element) => waiter.waitUntilVisible(element))
     },
+    
     ExecuteCheckIsNotPresent: async function (waiter, locator) {
         await waiter.waitFor(locator).then((element) => waiter.waitUntilNotVisible(element))
     },
