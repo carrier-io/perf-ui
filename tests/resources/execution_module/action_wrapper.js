@@ -49,7 +49,7 @@ module.exports = {
     ExecuteCheckIsPresent: async function (waiter, locator) {
         await waiter.waitFor(locator).then((element) => waiter.waitUntilVisible(element))
     },
-    // Closed carrier-io/perf-ui#20
+    
     ExecuteCheckIsNotPresent: async function (waiter, locator) {
         await waiter.waitFor(locator).then((element) => waiter.waitUntilNotVisible(element))
     },
