@@ -42,15 +42,15 @@ function ScenarioBuilder(test_name, influxConfig, reportPortalConfig, lightHouse
     this.junit = new JUnitBuilder(this.testName)
 
     this.lighthouse = new Lighthouse()
-    this.driver = new Builder().withCapabilities(browserCapabilities)
-        .setAlertBehavior('accept')
-        .forBrowser('chrome').build();
-    this.waiter = new Waiter(this.driver)
     lightHouseArr = lightHouseDevice
 }
 
 ScenarioBuilder.prototype.InitDriver = async function () {
     var outer_this = this
+    outer_this.driver = new Builder().withCapabilities(browserCapabilities)
+        .setAlertBehavior('accept')
+        .forBrowser('chrome').build();
+    outer_this.waiter = new Waiter(this.driver)
     await outer_this.driver.get("chrome://version");
     let element = await outer_this.driver.findElement(By.id('command_line'));
     let text = await element.getText();
@@ -172,7 +172,12 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
             }
         }
         if (outer_this.rp) {
-            await outer_this.rp.reportIssue(error, pageUrl, parameter, pageName, outer_this.driver, lightHouseArr, lh_name)
+            if (isAction){
+                await outer_this.rp.reportIssue(error, pageUrl, parameter, pageName, outer_this.driver, null, lh_name)
+            }else {
+                await outer_this.rp.reportIssue(error, pageUrl, parameter, pageName, outer_this.driver, lightHouseArr, lh_name)
+            }
+            
         }
     }
     else {
@@ -195,7 +200,11 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
             }
         }
         if (outer_this.rp) {
-            await outer_this.rp.reportResult(pageName, pageUrl, parameter, outer_this.driver, lightHouseArr, lh_name)
+            if (isAction){
+                await outer_this.rp.reportResult(pageName, pageUrl, parameter, outer_this.driver, null, lh_name)
+            }else {
+                await outer_this.rp.reportResult(pageName, pageUrl, parameter, outer_this.driver, lightHouseArr, lh_name)
+            }       
         }
     }
 }
