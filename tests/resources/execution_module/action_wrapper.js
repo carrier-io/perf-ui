@@ -57,11 +57,13 @@ module.exports = {
         await driver.switchTo().frame(locator)
     },
     ExecuteSwitchToDefaultContent: async function (driver) {
-
         await driver.switchTo().defaultContent()
     },
     ExecuteNavigateToUrl: async function (driver, url) {
         await driver.get(url)
+    },
+    ExecuteJS: async function (driver,value){
+        await driver.executeScript(value)
     },
     GetSessionCookie: async function (driver) {
         return await driver.manage().getCookies();
