@@ -137,6 +137,8 @@ ScenarioBuilder.prototype.ExecuteTest = async function (baseUrl, pageCheck, step
             case 'url':
                 await WebDriverActionWrapper.ExecuteNavigateToUrl(outer_this.driver, actionStep[1])
                 break;
+            case 'executeJS':
+                await WebDriverActionWrapper.ExecuteJS(outer_this.driver,actionStep[3])
             default:
                 break;
         }

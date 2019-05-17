@@ -33,3 +33,6 @@ Demo:
                 xpath: //div[@id="issDiv4"]
             - click:
                 xpath: //div[@id="issDiv4"]
+            - executeJS: 
+                value: window.location.replace(window.location.origin);
+            

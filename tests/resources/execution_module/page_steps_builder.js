@@ -68,6 +68,9 @@ function getStepType(step){
     if (step.url){
         stepType = 'url'
     }
+    if (step.executeJS){
+        stepType = 'executeJS'
+    }
     return stepType
 }
 
@@ -83,7 +86,7 @@ function AddStepToList(step){
     }
     
     resultArray[2] = getLocator(step[stepType])
-    if (stepType == 'input'){
+    if (stepType == 'input' || stepType == 'executeJS'){
         resultArray[3] = getInputValue(step[stepType])
     }
     return resultArray

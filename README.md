@@ -128,6 +128,9 @@ Demo:                                         # Test Suite
 
       - switchToDefault: true                         # Switch To Default Action (Switch to default content) 
 
+      - executeJS:                                    # ExecuteJS Action
+          value: window.location.replace("./");         # type here your javascript
+
     check:                                         # Same as Check Action, you would using when you need simple condition check in open page
         xpath: //div[@class='a-section a-spacing-small a-spacing-top-small']
 ```
