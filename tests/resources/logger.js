@@ -133,7 +133,7 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
             data = data.concat(datacell);
             if (outer_this.client != undefined || outer_this.client != null) {
                 outer_this.client.write(data[0]).tag(data[1]).field(data[2]).queue();
-                outer_this.client.syncWrite().catch((error) => { console.log(error) });
+                outer_this.client.syncWrite().catch((error) => { console.log(error.message) });
             }
             resolve(actionHandler);
         })

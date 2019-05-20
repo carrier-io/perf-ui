@@ -25,6 +25,11 @@ if (!env) {
     console.log("Please specify environment with -e option")
     process.exit()
 }
+if (typeof(env)=='string'){
+    env = {env}
+    console.log(env)
+}
+
 var test_name = argv['t']
 if (!test_name) {
     console.log("Please specify Test Name with -t option")
@@ -42,27 +47,36 @@ async function run() {
     var resolved_scenario = await parser.resolveRef(path)
     var influx_conf = resolved_scenario.influxdb || null
     var rp_conf = resolved_scenario.reportportal || null
-    var scenario = resolved_scenario[env]
-    
+    var scenario
+
     var rp;
     var lighthouseDeviceType = resolved_scenario.lighthouseDeviceEmulate || null
 
-    if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_name'] && (scenario != null || scenario != undefined )) {
+    if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_name'] && (env != null || env != undefined)) {
         rp = new ReportPortal(rp_conf)
         rp.startTestLaunch(test_name, `Results for ${test_name}`)
     } else if (rp_conf && (!rp_conf['rp_host'] || !rp_conf['rp_token'] || !rp_conf['rp_project_name'])) {
         console.log("Some Report Portal config values don't set\n")
         console.log(`Your config:\n ${JSON.stringify(rp_conf)}`)
     }
-    var ScenarioBuilder = new Scenario(test_name, influx_conf, rp, lighthouseDeviceType, env)
-    for (var j = 1; j <= times; j++) {
-        if (scenario != null || scenario != undefined){
-            await ScenarioBuilder.scn(scenario, j, times)
+
+    for (let test in env) {
+        var testSteps = env[test]
+        scenario = resolved_scenario[testSteps]
+        var ScenarioBuilder = new Scenario(testSteps, influx_conf, rp, lighthouseDeviceType, test_name)
+        for (var j = 1; j <= times; j++) {
+            if (scenario != null || scenario != undefined) {
+                console.log(`\nStarting '${testSteps}' suite`)
+                await ScenarioBuilder.scn(scenario, j, times)
+            }
+            else {
+                console.log(`\nSuite '${testSteps}' is not exist`)
+                break
+            }
         }
-        else {
-            console.log(`\nTest '${env}' is not exist`)
-            break
-        }
+    }
+    if (rp) {
+        await rp.finishTestLaunch()
     }
 }
 
