@@ -217,7 +217,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
 
     outer_this.InitDriver()
     try {
-        console.log(`\n${test_name} test, iteration ${globalIteration}`)
+        console.log(`\n${test_name} suite, iteration ${globalIteration}`)
         outer_this.scenarioIter = 1
         for (let page_name in scenario) {
 
@@ -261,12 +261,9 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
         outer_this.junit.errorCase(error)
     } finally {
         if (globalIteration == (times)) {
-            if (outer_this.rp) {
-                await outer_this.rp.finishTestLaunch()
-            }
             outer_this.junit.writeXml()
             utils.sleep(5)
-            console.info("\nCongrats, test is done.")
+            console.log(`\nCongrats, ${test_name} suite is done.`)
         }
         if (outer_this.driver) {
             outer_this.driver.quit();
