@@ -20,9 +20,11 @@ const jp = require('jsonpath');
 const request = require('request');
 const fs = require('fs-extra');
 const { format } = require('util')
+var logger
 
-function Lighthouse() {
+function Lighthouse(logger) {
     this.viewedPages = {}
+    this.logger = logger
 }
 
 function getScores(data) {
@@ -66,7 +68,7 @@ Lighthouse.prototype.runLighthouse = async function (url, lighthouse_opts, confi
     return await lighthouse(url, lighthouse_opts, config).then(results => {
         delete results.artifacts;
         return results
-    });
+    }).catch((error)=>{this.logger.debug(error)});
 }
 
 
@@ -77,17 +79,17 @@ Lighthouse.prototype.saveLighthouse = async function (data, pageName, simulation
             // var formData = configureFormData(scores, pageName)
             // uploadLighthousePage(formData, simulation)
         })
-        console.info('Lighthouse Page data saved to: %s.html', pageName);
+        this.logger.info('Lighthouse Page data saved to: '+pageName+'.html');
     } catch (e) {
-        console.error("Lighthouse page didn't saved.")
-        console.error(e)
+        this.logger.info("Lighthouse page didn't saved.")
+        this.logger.debug(e)
     }
 }
 
 Lighthouse.prototype.startLighthouse = async function (pageName, lighthouse_opts, driver, simulation) {
     var outer_this = this;
     return await driver.getCurrentUrl()
-        .then(url => outer_this.runLighthouse(url, lighthouse_opts).catch((err) => { console.log(err) })
+        .then(url => outer_this.runLighthouse(url, lighthouse_opts).catch((err) => { this.logger.error(err) })
         .then(results => outer_this.saveLighthouse(results, pageName, simulation)))
 }
 

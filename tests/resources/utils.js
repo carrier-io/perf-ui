@@ -16,17 +16,17 @@
 
 module.exports = {
 
-    takeScreenshot: async function (driver, name) {
+    takeScreenshot: async function (driver, name,logger) {
         return await driver.takeScreenshot().then(function (data) {
             name = `${name}.png` || 'ss.png';
             var path = '/tmp/reports/screenshots/';
             var output;
             try {
                 output = fs.appendFileSync(path + name, data, 'base64');
-                console.log(`New Screenshot created: ${name}`)
+                logger.info(`New Screenshot created: ${name}`)
             }
             catch(err){
-                console.log(err);
+                logger.info(err);
             }
             return output;
         })
@@ -56,10 +56,10 @@ module.exports = {
         return environment;
     },
 
-    setCookie: function(cookies, driver) {
+    setCookie: function(cookies, driver,logger) {
         for (let cookie in cookies){
             driver.manage().addCookie({name: cookie, value: cookies[cookie]})
-            console.log('SET!!!')
+            logger.info('SET!!!')
         }
     },
 

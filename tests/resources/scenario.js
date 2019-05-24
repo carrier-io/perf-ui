@@ -32,16 +32,21 @@ var lightHouseArr
 var driver
 var baseUrl
 var scenarioIter
+var consoleLogger
 
-function ScenarioBuilder(test_name, influxConfig, reportPortalConfig, lightHouseDevice, suite) {
-    this.testName = test_name.replace(/\.y.?ml/g, '')
-    this.logger = new Logger(influxConfig, this.testName, suite)
+function ScenarioBuilder(test_name, influxConfig, reportPortalConfig, lightHouseDevice, suite, consoleLogger) {
+    try {this.testName = test_name.replace(/\.y.?ml/g, '')}
+    catch (e){
+
+    }
+    this.consoleLogger = consoleLogger
+    this.lighthouse = new Lighthouse(consoleLogger)
+    this.logger = new Logger(influxConfig, this.testName, suite, consoleLogger)
     if (reportPortalConfig) {
         this.rp = reportPortalConfig
     }
     this.junit = new JUnitBuilder(this.testName)
 
-    this.lighthouse = new Lighthouse()
     lightHouseArr = lightHouseDevice
 }
 
@@ -96,13 +101,12 @@ ScenarioBuilder.prototype.TestStepsExecute = async function (page_name, urlWithP
         pageCheck = null
     }
     await outer_this.driver.sleep(200)
-        .then(() => { console.log("\nOpening %s TestCase (%d)", page_name, iteration) })
+        .then(() => { outer_this.consoleLogger.info("Opening " + page_name +" TestCase ("+iteration+")") })
         .then(() => outer_this.ExecuteTest(baseUrl, pageCheck, stepList))
         .catch((error) => { return error })
         .then((error) => outer_this.ResultReport(page_name, baseUrl, parameters, lh_name, error))
 }
 
-/// Method which executing list of steps
 ScenarioBuilder.prototype.ExecuteTest = async function (baseUrl, pageCheck, stepList) {
     var locator;
     var actionStep;
@@ -110,11 +114,13 @@ ScenarioBuilder.prototype.ExecuteTest = async function (baseUrl, pageCheck, step
     var previousUrl = outer_this.previousUrl
 
     if (scenarioIter == 1 || previousUrl != baseUrl) {
+        outer_this.consoleLogger.debug("Open " +baseUrl)
         await outer_this.driver.get(baseUrl)
     }
     for (let step in stepList) {
         actionStep = stepList[step]
         locator = await WebDriverActionWrapper.GetWebElementLocator(actionStep)
+        outer_this.consoleLogger.debug("Execute "+ actionStep[0] +" "+ locator + " step")
         switch (actionStep[0]) {
             case 'input':
                 await WebDriverActionWrapper.ExecuteInput(outer_this.driver, locator, actionStep[3])
@@ -145,6 +151,7 @@ ScenarioBuilder.prototype.ExecuteTest = async function (baseUrl, pageCheck, step
     }
     if (pageCheck != null || pageCheck != undefined) {
         locator = await WebDriverActionWrapper.GetWebElementLocator(pageCheck)
+        outer_this.consoleLogger.debug("Execute check step")
         await WebDriverActionWrapper.ExecuteCheckIsPresent(outer_this.waiter, locator)
     }
 }
@@ -155,10 +162,10 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
     var status
 
     if (error) {
-        console.log(`Test Case ${pageName} failed.`)
+        outer_this.consoleLogger.error(`Test Case ${pageName} failed.`)
         await outer_this.junit.failCase(pageName, error)
         if (!outer_this.rp) {
-            await utils.takeScreenshot(outer_this.driver, `${pageName}_Failed`)
+            await utils.takeScreenshot(outer_this.driver, `${pageName}_Failed`,outer_this.consoleLogger)
         }
         if (outer_this.logger) {
             status = 'ko'
@@ -170,7 +177,7 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
                 await outer_this.lighthouse.startAnalyse(lh_name, lightHouseArr, lighthouseOptionsDesktop, lighthouseOptionsMobile, outer_this.driver, outer_this.testName)
             }
             catch (error) {
-                console.log(error.friendlyMessage)
+                outer_this.consoleLogger.error(error.friendlyMessage)
             }
         }
         if (outer_this.rp) {
@@ -183,10 +190,10 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
         }
     }
     else {
-        console.log(`Starting Analyse ${pageName}.`)
+        outer_this.consoleLogger.info(`Starting Analyse ${pageName}.`)
         await outer_this.junit.successCase(pageName)
         if (!outer_this.rp) {
-            await utils.takeScreenshot(outer_this.driver, pageName)
+            await utils.takeScreenshot(outer_this.driver, pageName,outer_this.consoleLogger)
         }
         if (outer_this.logger) {
             status = 'ok'
@@ -198,7 +205,7 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
                 await outer_this.lighthouse.startAnalyse(lh_name, lightHouseArr, lighthouseOptionsDesktop, lighthouseOptionsMobile, outer_this.driver, outer_this.testName)
             }
             catch (error) {
-                console.log(error.friendlyMessage)
+                outer_this.consoleLogger.error(error.friendlyMessage)
             }
         }
         if (outer_this.rp) {
@@ -217,7 +224,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
 
     outer_this.InitDriver()
     try {
-        console.log(`\n${test_name} suite, iteration ${globalIteration}`)
+        outer_this.consoleLogger.info(`${test_name} suite, iteration ${globalIteration}`)
         outer_this.scenarioIter = 1
         for (let page_name in scenario) {
 
@@ -257,13 +264,13 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
             await utils.sleep(3)
         }
     } catch (error) {
-        console.log(error.message)
+        outer_this.consoleLogger.error(error)
         outer_this.junit.errorCase(error)
     } finally {
         if (globalIteration == (times)) {
             outer_this.junit.writeXml()
             utils.sleep(5)
-            console.log(`\nCongrats, ${test_name} suite is done.`)
+            outer_this.consoleLogger.info(`Congrats, ${test_name} suite is done.`)
         }
         if (outer_this.driver) {
             outer_this.driver.quit();

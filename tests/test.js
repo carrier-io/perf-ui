@@ -19,32 +19,41 @@ var parser = require('./resources/parser')
 var Scenario = require('./resources/scenario')
 var ReportPortal = require('./resources/report_portal')
 var argv = require('minimist')(process.argv.slice(2));
+var pino = require('pino')
+var logger = pino({
+    prettyPrint: true,
+})
+
+var debugMode = argv['d'] || false
+if (debugMode) {
+    logger.level = 'debug'
+    logger.debug("RUN IN DEBUG MODE\n")
+}
 
 var env = argv['e']
 if (!env) {
-    console.log("Please specify environment with -e option")
+    logger.info("Please specify environment with -e option")
     process.exit()
 }
-if (typeof(env)=='string'){
-    env = {env}
-    console.log(env)
+if (typeof (env) == 'string') {
+    env = { env }
 }
 
 var test_name = argv['t']
 if (!test_name) {
-    console.log("Please specify Test Name with -t option")
+    logger.info("Please specify Test Name with -t option")
     process.exit()
 }
 var times = argv['n'];
 if (!times) {
     times = 1;
-    console.log('Test going to be run: ' + times + ' times')
+    logger.info('Test going to be run: ' + times + ' times')
 
 }
 
 async function run() {
     var path = '/tmp/tests/' + test_name
-    var resolved_scenario = await parser.resolveRef(path)
+    var resolved_scenario = await parser.resolveRef(path, logger)
     var influx_conf = resolved_scenario.influxdb || null
     var rp_conf = resolved_scenario.reportportal || null
     var scenario
@@ -55,28 +64,30 @@ async function run() {
     if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_name'] && (env != null || env != undefined)) {
         rp = new ReportPortal(rp_conf)
         rp.startTestLaunch(test_name, `Results for ${test_name}`)
+        logger.debug("RP launch was started")
     } else if (rp_conf && (!rp_conf['rp_host'] || !rp_conf['rp_token'] || !rp_conf['rp_project_name'])) {
-        console.log("Some Report Portal config values don't set\n")
-        console.log(`Your config:\n ${JSON.stringify(rp_conf)}`)
+        logger.info("Some Report Portal config values don't set")
+        logger.info(`Your config: ${JSON.stringify(rp_conf)}`)
     }
 
     for (let test in env) {
         var testSteps = env[test]
         scenario = resolved_scenario[testSteps]
-        var ScenarioBuilder = new Scenario(testSteps, influx_conf, rp, lighthouseDeviceType, test_name)
+        var ScenarioBuilder = new Scenario(testSteps, influx_conf, rp, lighthouseDeviceType, test_name, logger)
         for (var j = 1; j <= times; j++) {
             if (scenario != null || scenario != undefined) {
-                console.log(`\nStarting '${testSteps}' suite`)
+                logger.info(`Starting '${testSteps}' suite`)
                 await ScenarioBuilder.scn(scenario, j, times)
             }
             else {
-                console.log(`\nSuite '${testSteps}' is not exist`)
+                logger.info(`Suite '${testSteps}' is not exist`)
                 break
             }
         }
     }
     if (rp) {
         await rp.finishTestLaunch()
+        logger.debug("RP launch was finished")
     }
 }
 
