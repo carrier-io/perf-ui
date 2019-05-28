@@ -154,6 +154,16 @@ ScenarioBuilder.prototype.ExecuteTest = async function (baseUrl, pageCheck, step
         outer_this.consoleLogger.debug("Execute check step")
         await WebDriverActionWrapper.ExecuteCheckIsPresent(outer_this.waiter, locator)
     }
+    var pageState
+    do{
+        pageState = await outer_this.driver.executeScript("return document.readyState").then((state)=>{return state})
+        if (pageState == "loading"){
+            await utils.sleep(1)
+        }
+        outer_this.consoleLogger.debug("Page state is " + pageState)
+    }
+    while(pageState == "complite")
+    
 }
 
 ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, parameter, lh_name, error) {
