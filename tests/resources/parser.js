@@ -28,14 +28,14 @@ function parseCookie(filepath) {
     }
 }
 
-async function resolveRef(filepath) {
+async function resolveRef(filepath,logger) {
     try{
         var result = await $RefParser.dereference(filepath).catch((err)=>{console.log(err)})
-        console.log(JSON.stringify(result))
+        logger.debug(JSON.stringify(result))
         return result
     }
     catch(error){
-        console.log(error)
+        logger.error(error)
     }
 }
 

@@ -17,8 +17,9 @@
 var InfluxDB = require('influxdb-nodejs');
 var UIPerformanceClient = require('./ui_perf_client');
 var utils = require('./utils')
+var consoleLogger
 
-function Logger(influx_conf, scenario, suite) {
+function Logger(influx_conf, scenario, suite, logger) {
 
     if (influx_conf) {
         var influx_host = influx_conf['url'] + influx_conf['db_name']
@@ -34,6 +35,7 @@ function Logger(influx_conf, scenario, suite) {
     this.build_id = scenario + "_" + Date.now();
     this.start_time = Date.now();
     this.suite = suite;
+    this.consoleLogger = logger
 }
 
 Logger.prototype.logInfo = async function (driver, pageName, status, isAlert = false) {
@@ -133,7 +135,7 @@ Logger.prototype.measure = function (driver, pageName, status, isAlert) {
             data = data.concat(datacell);
             if (outer_this.client != undefined || outer_this.client != null) {
                 outer_this.client.write(data[0]).tag(data[1]).field(data[2]).queue();
-                outer_this.client.syncWrite().catch((error) => { console.log(error.message) });
+                outer_this.client.syncWrite().catch((error) => { outer_this.consoleLogger.error(error.message) });
             }
             resolve(actionHandler);
         })
