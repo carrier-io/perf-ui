@@ -62,7 +62,7 @@ async function run() {
     var lighthouseDeviceType = resolved_scenario.lighthouseDeviceEmulate || null
 
     if (rp_conf && rp_conf['rp_host'] && rp_conf['rp_token'] && rp_conf['rp_project_name'] && (env != null || env != undefined)) {
-        rp = new ReportPortal(rp_conf)
+        rp = new ReportPortal(rp_conf,logger)
         rp.startTestLaunch(test_name, `Results for ${test_name}`)
         logger.debug("RP launch was started")
     } else if (rp_conf && (!rp_conf['rp_host'] || !rp_conf['rp_token'] || !rp_conf['rp_project_name'])) {
