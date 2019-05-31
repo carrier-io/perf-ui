@@ -26,7 +26,7 @@ module.exports = {
                 logger.info(`New Screenshot created: ${name}`)
             }
             catch(err){
-                logger.info(err);
+                logger.error(err);
             }
             return output;
         })

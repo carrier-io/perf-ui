@@ -17,8 +17,9 @@
 var RPClient = require('reportportal-client');
 var fs = require('fs');
 var utils = require('./utils')
+var logger
 
-function ReportPortal(config) {
+function ReportPortal(config,logger) {
     this.rpClient = new RPClient({
         token: config['rp_token'],
         endpoint: "https://" + config['rp_host'] + "/api/v1",
@@ -33,6 +34,7 @@ function ReportPortal(config) {
     }
     this.image_path = `/tmp/reports/screenshots/`;
     this.lh_path = `/tmp/reports/lighthouse_pages/`;
+    this.logger = logger
 }
 
 ReportPortal.prototype.startTestLaunch = function (description) {
@@ -111,7 +113,7 @@ ReportPortal.prototype.reportIssue = async function (error, domain, url_path, pa
 
     var step = outer_this.startItem(page_name, err_message, [page_name, domain])
 
-    await utils.takeScreenshot(driver, image_name)
+    await utils.takeScreenshot(driver, image_name, outer_this.logger)
         .then(() => outer_this.sendTestLogWithFile(step, outer_this.image_path, `${image_name}.png`, "image/png", `Screenshot: ${image_name}.png`))
         .catch(error => console.log("Failed to load screenshot.\n" + error))
         .then(() => {
@@ -149,7 +151,7 @@ ReportPortal.prototype.reportResult = async function (page_name, url, path, driv
 
     var step = outer_this.startItem(page_name, `Results for ${page_name}`, [page_name, url]);
 
-    await utils.takeScreenshot(driver, image_name)
+    await utils.takeScreenshot(driver, image_name, outer_this.logger)
         .then(() => outer_this.sendTestLog(step, 'INFO', `Page name: ${page_name}`))
         .then(() => outer_this.sendTestLog(step, 'INFO', `URL: ${url}`))
         .then(() => {
