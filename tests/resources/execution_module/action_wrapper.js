@@ -1,5 +1,32 @@
 const { By } = require('selenium-webdriver')
+var hash = require('object-hash')
+var iterationCollection = new Map()
 
+function GetFeeder(value){
+    if (!iterationCollection.has(hash(value))){
+        iterationCollection.set(hash(value),Array.from(value))
+    }
+    if (iterationCollection.has(hash(value))){
+        var checkCollection = iterationCollection.get(hash(value))
+        if (checkCollection.length <= 0){
+            iterationCollection.set(hash(value),Array.from(value))
+        }
+    }
+    return iterationCollection.get(hash(value)).shift()
+}
+function GetFeederInsideString(value){
+    if (!iterationCollection.has(hash(value))){
+        iterationCollection.set(hash(value),Array.from(value.resolveData))
+    }
+    if (iterationCollection.has(hash(value))){
+        var checkCollection = iterationCollection.get(hash(value))
+        if (checkCollection.length <= 0){
+            iterationCollection.set(hash(value),Array.from(value.resolveData))
+        }
+    }
+    var temp = iterationCollection.get(hash(value)).shift()
+    return value.defaultString.replace("__placeholder__",temp)
+}
 
 module.exports = {
     GetWebElementLocator: async function (step) {
@@ -10,10 +37,10 @@ module.exports = {
             return By.css(step[2])
         }
         if (step[1] == 'id') {
-            if (step[2] instanceof Number){
+            if (step[2] instanceof Number) {
                 return step[2]
             }
-            else{
+            else {
                 return By.id(step[2])
             }
         }
@@ -29,7 +56,7 @@ module.exports = {
         if (step['css']) {
             return By.css(step['css'])
         }
-        if (step['id']){
+        if (step['id']) {
             return By.id(step['id'])
         }
         if (step['name'] == 'name') {
@@ -43,13 +70,33 @@ module.exports = {
         await driver.findElement(locator).click()
     },
     ExecuteInput: async function (driver, locator, value) {
+        if (typeof value == 'undefined'){
+            throw "Current variable not found, please check your YAML file"
+        }
+        if (typeof value == "object") {
+            if (value == undefined || value == null || value.length <= 0){
+                throw "Variable value not defined, please check your feeder file"
+            }
+            if (Array.isArray(value)){
+                var result = GetFeeder(value)   
+            }
+            else{
+                var result = GetFeederInsideString(value)
+            }        
+            if (result == undefined || result == null){
+                throw "Variable value is empty, please set than in feeder file"
+            }
+        }
+        else {
+            var result = value
+        }
         await driver.findElement(locator).clear()
-        await driver.findElement(locator).sendKeys(value)
+        await driver.findElement(locator).sendKeys(result)
     },
     ExecuteCheckIsPresent: async function (waiter, locator) {
         await waiter.waitFor(locator).then((element) => waiter.waitUntilVisible(element))
     },
-    
+
     ExecuteCheckIsNotPresent: async function (waiter, locator) {
         await waiter.waitFor(locator).then((element) => waiter.waitUntilNotVisible(element))
     },
@@ -62,7 +109,7 @@ module.exports = {
     ExecuteNavigateToUrl: async function (driver, url) {
         await driver.get(url)
     },
-    ExecuteJS: async function (driver,value){
+    ExecuteJS: async function (driver, value) {
         await driver.executeScript(value)
     },
     GetSessionCookie: async function (driver) {

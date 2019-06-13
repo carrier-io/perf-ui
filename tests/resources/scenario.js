@@ -33,12 +33,11 @@ var driver
 var baseUrl
 var scenarioIter
 var consoleLogger
+var UserFeeders
 
-function ScenarioBuilder(test_name, influxConfig, reportPortalConfig, lightHouseDevice, suite, consoleLogger) {
-    try {this.testName = test_name.replace(/\.y.?ml/g, '')}
-    catch (e){
-
-    }
+function ScenarioBuilder(test_name, influxConfig, reportPortalConfig, lightHouseDevice, suite, consoleLogger, UserFeeders) {
+    try { this.testName = test_name.replace(/\.y.?ml/g, '') }
+    catch (e) { }
     this.consoleLogger = consoleLogger
     this.lighthouse = new Lighthouse(consoleLogger)
     this.logger = new Logger(influxConfig, this.testName, suite, consoleLogger)
@@ -46,8 +45,8 @@ function ScenarioBuilder(test_name, influxConfig, reportPortalConfig, lightHouse
         this.rp = reportPortalConfig
     }
     this.junit = new JUnitBuilder(this.testName)
-
-    lightHouseArr = lightHouseDevice
+    this.lightHouseArr = lightHouseDevice
+    this.UserFeeders = UserFeeders
 }
 
 ScenarioBuilder.prototype.InitDriver = async function () {
@@ -66,6 +65,7 @@ ScenarioBuilder.prototype.InitDriver = async function () {
             port = Number(word.split('=')[1]);
             lighthouseOptionsDesktop.port = port;
             lighthouseOptionsMobile.port = port;
+            outer_this.consoleLogger.debug("Using " + port + " port for debug")
         } else { }
     });
 }
@@ -101,7 +101,7 @@ ScenarioBuilder.prototype.TestStepsExecute = async function (page_name, urlWithP
         pageCheck = null
     }
     await outer_this.driver.sleep(200)
-        .then(() => { outer_this.consoleLogger.info("Opening " + page_name +" TestCase ("+iteration+")") })
+        .then(() => { outer_this.consoleLogger.info("Opening " + page_name + " TestCase (" + iteration + ")") })
         .then(() => outer_this.ExecuteTest(baseUrl, pageCheck, stepList))
         .catch((error) => { return error })
         .then((error) => outer_this.ResultReport(page_name, baseUrl, parameters, lh_name, error))
@@ -113,14 +113,14 @@ ScenarioBuilder.prototype.ExecuteTest = async function (baseUrl, pageCheck, step
     var outer_this = this
     var previousUrl = outer_this.previousUrl
 
-    if (scenarioIter == 1 || previousUrl != baseUrl) {
-        outer_this.consoleLogger.debug("Open " +baseUrl)
+    if (scenarioIter == 1 || previousUrl != baseUrl || outer_this.driver) {
+        outer_this.consoleLogger.debug("Open " + baseUrl)
         await outer_this.driver.get(baseUrl)
     }
     for (let step in stepList) {
         actionStep = stepList[step]
         locator = await WebDriverActionWrapper.GetWebElementLocator(actionStep)
-        outer_this.consoleLogger.debug("Execute "+ actionStep[0] +" "+ locator + " step")
+        outer_this.consoleLogger.debug("Execute " + actionStep[0] + " " + locator + " step")
         switch (actionStep[0]) {
             case 'input':
                 await WebDriverActionWrapper.ExecuteInput(outer_this.driver, locator, actionStep[3])
@@ -144,7 +144,7 @@ ScenarioBuilder.prototype.ExecuteTest = async function (baseUrl, pageCheck, step
                 await WebDriverActionWrapper.ExecuteNavigateToUrl(outer_this.driver, actionStep[1])
                 break;
             case 'executeJS':
-                await WebDriverActionWrapper.ExecuteJS(outer_this.driver,actionStep[3])
+                await WebDriverActionWrapper.ExecuteJS(outer_this.driver, actionStep[3])
             default:
                 break;
         }
@@ -155,15 +155,15 @@ ScenarioBuilder.prototype.ExecuteTest = async function (baseUrl, pageCheck, step
         await WebDriverActionWrapper.ExecuteCheckIsPresent(outer_this.waiter, locator)
     }
     var pageState
-    do{
-        pageState = await outer_this.driver.executeScript("return document.readyState").then((state)=>{return state})
-        if (pageState == "loading"){
+    do {
+        pageState = await outer_this.driver.executeScript("return document.readyState").then((state) => { return state })
+        if (pageState == "loading") {
             await utils.sleep(1)
         }
         outer_this.consoleLogger.debug("Page state is " + pageState)
     }
-    while(pageState == "complite")
-    
+    while (pageState == "complite")
+
 }
 
 ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, parameter, lh_name, error) {
@@ -173,9 +173,10 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
 
     if (error) {
         outer_this.consoleLogger.error(`Test Case ${pageName} failed.`)
+        outer_this.consoleLogger.debug(error)
         await outer_this.junit.failCase(pageName, error)
         if (!outer_this.rp) {
-            await utils.takeScreenshot(outer_this.driver, `${pageName}_Failed`,outer_this.consoleLogger)
+            await utils.takeScreenshot(outer_this.driver, `${pageName}_Failed`, outer_this.consoleLogger)
         }
         if (outer_this.logger) {
             status = 'ko'
@@ -191,19 +192,19 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
             }
         }
         if (outer_this.rp) {
-            if (isAction){
+            if (isAction) {
                 await outer_this.rp.reportIssue(error, pageUrl, parameter, pageName, outer_this.driver, null, lh_name)
-            }else {
+            } else {
                 await outer_this.rp.reportIssue(error, pageUrl, parameter, pageName, outer_this.driver, lightHouseArr, lh_name)
             }
-            
+
         }
     }
     else {
         outer_this.consoleLogger.info(`Starting Analyse ${pageName}.`)
         await outer_this.junit.successCase(pageName)
         if (!outer_this.rp) {
-            await utils.takeScreenshot(outer_this.driver, pageName,outer_this.consoleLogger)
+            await utils.takeScreenshot(outer_this.driver, pageName, outer_this.consoleLogger)
         }
         if (outer_this.logger) {
             status = 'ok'
@@ -219,11 +220,11 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
             }
         }
         if (outer_this.rp) {
-            if (isAction){
+            if (isAction) {
                 await outer_this.rp.reportResult(pageName, pageUrl, parameter, outer_this.driver, null, lh_name)
-            }else {
+            } else {
                 await outer_this.rp.reportResult(pageName, pageUrl, parameter, outer_this.driver, lightHouseArr, lh_name)
-            }       
+            }
         }
     }
 }
@@ -245,7 +246,7 @@ ScenarioBuilder.prototype.scn = async function (scenario, globalIteration, times
             if (page['url'] != null || page['url'] != undefined) {
                 outer_this.baseUrl = page['url']
             }
-            stepList = PageStepsBuilder.StepListForExecution(page['steps'])
+            stepList = PageStepsBuilder.StepListForExecution(page['steps'], this.UserFeeders)
 
             if (parameters != null || parameters != undefined) {
 
