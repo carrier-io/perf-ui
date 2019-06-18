@@ -183,9 +183,9 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
             await outer_this.logger.logError(error, pageUrl, pageName, parameter)
             isAction = await outer_this.logger.logInfo(outer_this.driver, pageName, status)
         }
-        if (!isAction && (lightHouseArr != undefined || lightHouseArr != null)) {
+        if (!isAction && (outer_this.lightHouseArr != undefined || outer_this.lightHouseArr != null)) {
             try {
-                await outer_this.lighthouse.startAnalyse(lh_name, lightHouseArr, lighthouseOptionsDesktop, lighthouseOptionsMobile, outer_this.driver, outer_this.testName)
+                await outer_this.lighthouse.startAnalyse(lh_name, outer_this.lightHouseArr, lighthouseOptionsDesktop, lighthouseOptionsMobile, outer_this.driver, outer_this.testName)
             }
             catch (error) {
                 outer_this.consoleLogger.error(error.friendlyMessage)
@@ -197,7 +197,6 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
             } else {
                 await outer_this.rp.reportIssue(error, pageUrl, parameter, pageName, outer_this.driver, lightHouseArr, lh_name)
             }
-
         }
     }
     else {
@@ -211,9 +210,9 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
             isAction = await outer_this.logger.logInfo(outer_this.driver, pageName, status)
             await outer_this.driver.executeScript('performance.clearResourceTimings()');
         }
-        if (!isAction && (lightHouseArr != undefined || lightHouseArr != null)) {
+        if (!isAction && (outer_this.lightHouseArr != undefined || outer_this.lightHouseArr != null)) {
             try {
-                await outer_this.lighthouse.startAnalyse(lh_name, lightHouseArr, lighthouseOptionsDesktop, lighthouseOptionsMobile, outer_this.driver, outer_this.testName)
+                await outer_this.lighthouse.startAnalyse(lh_name, outer_this.lightHouseArr, lighthouseOptionsDesktop, lighthouseOptionsMobile, outer_this.driver, outer_this.testName)
             }
             catch (error) {
                 outer_this.consoleLogger.error(error.friendlyMessage)
@@ -223,7 +222,7 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
             if (isAction) {
                 await outer_this.rp.reportResult(pageName, pageUrl, parameter, outer_this.driver, null, lh_name)
             } else {
-                await outer_this.rp.reportResult(pageName, pageUrl, parameter, outer_this.driver, lightHouseArr, lh_name)
+                await outer_this.rp.reportResult(pageName, pageUrl, parameter, outer_this.driver, outer_this.lightHouseArr, lh_name)
             }
         }
     }
