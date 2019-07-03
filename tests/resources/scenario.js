@@ -72,15 +72,17 @@ ScenarioBuilder.prototype.InitDriver = async function () {
 
 var lighthouseOptionsDesktop = {
     chromeFlags: ['--show-paint-rects', '--window-size=1440,900'],
-    "disableDeviceEmulation": true
+    "emulatedFormFactor": "none",
+    "output": "html"
 }
 var lighthouseOptionsMobile = {
-    chromeFlags: ['--show-paint-rects', '--window-size=1440,900']
+    chromeFlags: ['--show-paint-rects', '--window-size=1440,900'],
+    "output": "html"
 }
 const browserCapabilities = {
     "browserName": 'chrome',
     "chromeOptions": {
-        "args": ["--window-size=1440,900", "--disable-dev-shm-usage", "--no-sandbox"],
+        "args": ["--window-size=1440,900", "--disable-dev-shm-usage", "--no-sandbox", "--remote-debugging-port=9222"],
         "extensions": []
     }
 }
