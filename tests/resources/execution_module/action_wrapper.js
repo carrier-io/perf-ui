@@ -2,26 +2,24 @@ const { By } = require('selenium-webdriver')
 var hash = require('object-hash')
 var iterationCollection = new Map()
 
-function GetFeeder(value){
-    if (!iterationCollection.has(hash(value))){
-        iterationCollection.set(hash(value),Array.from(value))
-    }
-    if (iterationCollection.has(hash(value))){
-        var checkCollection = iterationCollection.get(hash(value))
-        if (checkCollection.length <= 0){
-            iterationCollection.set(hash(value),Array.from(value))
-        }
-    }
-    return iterationCollection.get(hash(value)).shift()
-}
 function GetFeederInsideString(value){
     if (!iterationCollection.has(hash(value))){
-        iterationCollection.set(hash(value),Array.from(value.resolveData))
+        if (typeof value.resolveData == 'string'){
+            iterationCollection.set(hash(value),[value.resolveData])
+        }
+        else{
+            iterationCollection.set(hash(value),Array.from(value.resolveData))
+        }
     }
     if (iterationCollection.has(hash(value))){
         var checkCollection = iterationCollection.get(hash(value))
         if (checkCollection.length <= 0){
-            iterationCollection.set(hash(value),Array.from(value.resolveData))
+            if (typeof value.resolveData == 'string'){
+                iterationCollection.set(hash(value),[value.resolveData])
+            }
+            else{
+                iterationCollection.set(hash(value),Array.from(value.resolveData))
+            }
         }
     }
     var temp = iterationCollection.get(hash(value)).shift()
@@ -77,12 +75,7 @@ module.exports = {
             if (value == undefined || value == null || value.length <= 0){
                 throw "Variable value not defined, please check your feeder file"
             }
-            if (Array.isArray(value)){
-                var result = GetFeeder(value)   
-            }
-            else{
-                var result = GetFeederInsideString(value)
-            }        
+            var result = GetFeederInsideString(value)       
             if (result == undefined || result == null){
                 throw "Variable value is empty, please set than in feeder file"
             }
@@ -110,7 +103,19 @@ module.exports = {
         await driver.get(url)
     },
     ExecuteJS: async function (driver, value) {
-        await driver.executeScript(value)
+        if (typeof value == "object") {
+            if (value == undefined || value == null || value.length <= 0){
+                throw "Variable value not defined, please check your feeder file"
+            }
+            var result = GetFeederInsideString(value)       
+            if (result == undefined || result == null){
+                throw "Variable value is empty, please set than in feeder file"
+            }
+        }
+        else {
+            var result = value
+        }
+        await driver.executeScript(result)
     },
     GetSessionCookie: async function (driver) {
         return await driver.manage().getCookies();

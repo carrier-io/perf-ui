@@ -1,0 +1,219 @@
+mixin adviceInfo(name, id, perfectScore, node)
+  a(id=id)
+  h3 #{name} (#{node.score})
+  if node.score < 100
+    button.hidden-small.button.button--primary(onclick='toggleRow(this);') Show/hide details
+    .responsive
+      table
+        thead
+          tr
+            th Title
+            th Advice
+            th Score
+        tbody
+          each adviceName, idx in Object.getOwnPropertyNames(node.adviceList).filter(e => node.adviceList[e].score < 100)
+            - const advice = node.adviceList[adviceName]
+            tr(class=idx % 2 == 0 ? 'odd' : 'even')
+              td(data-title='Title') #{advice.title} (#{adviceName})
+              td.url(data-title='Advice') #{advice.advice}
+              td.number(data-title='Score') #{advice.score}
+            if (advice.offending.length > 0)
+              tr.u-hideable
+                td.url.offendingurl(colspan='3')
+                  ul
+                    each offender in advice.offending
+                      li #{offender}
+  else
+    p #{perfectScore}
+
+html
+  head 
+    title Carrier | UI Performance Audit
+    link(rel="icon" href="https://getcarrier.io/favicon-32x32.png" sizes="32x32" type="image/png")
+    style
+      include index.css
+    script(type='text/javascript').
+      function toggleRow(toggleElement){
+        const rows = toggleElement.nextSibling.getElementsByClassName("u-hideable");
+        for (let i = 0; i < rows.length; ++i) {
+          const status = rows[i].currentStyle ? rows[i].currentStyle.display :
+                                  getComputedStyle(rows[i], null).display;
+          rows[i].style.display = (status === 'none') ? "table-row" : "none";
+        }
+      }
+    script(type='text/javascript').
+      function openFull(id){
+        var modal = document.getElementById("openFull"+"_"+id);
+        var img = document.getElementById("frame"+"_"+id);
+        var modalImg = document.getElementById("frameModal"+"_"+id);
+        var captionText = document.getElementById("caption"+"_"+id);
+        img.onclick = function(){
+          modal.style.display = "block";
+          modalImg.src = this.src;
+          captionText.innerHTML = img.alt;
+        }
+        var span = document.getElementsByClassName("close"+"_"+id)[0];
+        span.onclick = function() { 
+          modal.style.display = "none";
+        }
+      }
+    script(src="https://www.gstatic.com/charts/loader.js")
+    script(type="text/javascript").
+      google.charts.load('current', {'packages':['timeline']});
+      google.charts.setOnLoadCallback(function(){drawChart('!{ReportTiming}')});
+      function drawChart(time_data) {
+        var testData = JSON.parse(time_data)
+        var container = document.getElementById('timeLine');
+        var chart = new google.visualization.Timeline(container);
+        var dataTable = new google.visualization.DataTable();
+    
+        dataTable.addColumn({ type: 'string', id: 'Term' });
+        dataTable.addColumn({ type: 'string', id: 'Phase' });
+        dataTable.addColumn({ type: 'number', id: 'Start' });
+        dataTable.addColumn({ type: 'number', id: 'End' });
+        dataTable.addRows([
+          ['1', 'Total Time', testData.navigationStart, testData.loadEventEnd ],
+          ['2', 'Network', testData.navigationStart,  testData.fetchStart ],
+          ['3', 'Time To First Bite', testData.fetchStart,  testData.requestStart ],
+          ['4', 'Request', testData.requestStart,  testData.responseStart ],
+          ['5', 'Responce', testData.responseStart,  testData.responseEnd ],
+          ['6', 'Dom Processing', testData.domLoading,  testData.domComplete ],
+          ['7', 'Load Event', testData.loadEventStart,  testData.loadEventEnd ]]);
+          var options = {
+              timeline: { showRowLabels: false},
+              animation: {
+              startup: true,
+                duration: 1000,
+                easing: 'in'
+                },
+            avoidOverlappingGridLines: true,
+              backgroundColor: '#fff',
+              colors: ['#94499C', '#1072BA', '#F2E208', '#F08821','#65B345', '#514b43']
+            };
+          chart.draw(dataTable, options);
+          var e = document.getElementsByTagName('g') 
+          e[1].parentNode.removeChild(e[1])
+      }
+    script(type='text/javascript').
+      setInterval(function() {
+        var elem = document.getElementsByClassName('google-visualization-tooltip-action');
+        if(elem.length == 2) {
+          elem[0].parentNode.removeChild(elem[0]);
+        } 
+        elem = null
+      }, 100);
+    script(type='text/javascript').
+      google.charts.load('current', {'packages':['timeline']});
+      google.charts.setOnLoadCallback(function(){drawChartRes('!{ReportResource}')});
+      function drawChartRes(resourcesData) {
+        var dataVisualise = JSON.parse(resourcesData)
+        window.Mytest = dataVisualise
+        var container = document.getElementById('timeLine2');
+        var chart = new google.visualization.Timeline(container);
+        var dataTable = new google.visualization.DataTable();
+
+        function prepareData(data){
+            var collection = []
+            var iterator = 1
+            for (const resources of data) {
+                collection.push([iterator.toString(),resources.name , resources.startTime, resources.responseEnd])
+                iterator++
+            }
+            return collection
+        }
+        dataTable.addColumn({ type: 'string', id: 'Term' });
+        dataTable.addColumn({ type: 'string', id: 'Name' });
+        dataTable.addColumn({ type: 'number', id: 'Start' });
+        dataTable.addColumn({ type: 'number', id: 'End' });
+        dataTable.addRows(prepareData(dataVisualise));
+
+        var options = {
+          timeline: { showRowLabels: false }
+        };
+
+        chart.draw(dataTable, options);
+        var e = document.getElementsByTagName('g') 
+        e[7].parentNode.removeChild(e[7])
+      }
+  body(class='content')
+   
+  h1 Carrier Perf-UI Audit
+
+- var trashHold = function(data){
+-   if (data >= 90){
+-     return "ok"
+-   }
+-   if (data< 90 && data >= 80){
+-     return "warning"
+-   }
+-   if (data < 80){
+-     return "error"
+-   }
+- }
+
+- var checkStatus = function(data){
+-   if (data == "Passed"){
+-      return "ok"
+-   }
+-   if (data == "Failured"){
+-      return "error"
+-   }
+- }
+
+.row
+  .column
+    .row
+      .four.columns
+        a(href='https://getcarrier.io/#about')
+          img.u-max-full-width(src= 'https://avatars2.githubusercontent.com/u/45669065?s=200&v=4', alt='Carrier')
+          p.small
+        a(href='https://github.com/carrier-io/perf-ui') Perf UI
+        | &nbsp;audit helps you find performance problems on your web page.
+      .eight.columns
+        h4 Test status:&nbsp;
+          - testStatus = 'label normal ' + checkStatus(TestStatus)
+          span(class=testStatus) #{TestStatus}
+        - sLabel = 'label normal ' + trashHold(advice.score)
+        h3 Page total score:&nbsp;
+            span(class=sLabel) #{advice.score}
+        ul
+          - pLabel = 'label normal ' + trashHold(advice.performance.score)
+          - prLabel = 'label normal ' + trashHold(advice.privacy.score)
+          - aLabel = 'label normal ' + trashHold(advice.accessibility.score)
+          - bLabel = 'label normal ' +  trashHold(advice.bestpractice.score)
+          li.group-item 
+            a(href='#coach-perf') Performance score
+            | &nbsp;
+            span(class=pLabel) #{advice.performance.score}
+          li.group-item 
+            a(href='#coach-privacy') Privacy score
+            | &nbsp;
+            span(class=prLabel) #{advice.privacy.score}  
+          li.group-item 
+            a(href='#coach-access') Accessibility score
+            | &nbsp;
+            span(class=aLabel) #{advice.accessibility.score}
+          li.group-item 
+            a(href='#coach-bestpractice') Best practice score
+            | &nbsp;
+            span(class=bLabel) #{advice.bestpractice.score}
+      h3 Page Load Timing
+      .time.colomn
+        div(id='frames_container')
+          each value,index in frameBase64Array
+            div(id='divFrame')
+              img(src='data:image/jpg;base64,'+value, alt="load frame" id='frame_'+index onclick='openFull('+index+')' class='frameImg')
+              div(id='openFull_'+index ,class='modal', style='display:none')
+                span(class='close_'+index id='close' ) &times;
+                img(class='content', id='frameModal_'+index)
+                div(id='caption_'+index class='caption')
+              div(id='frameFooter')
+        div(id='timeLine')
+      h3 Resource timing
+      div(id='timeLine2')
+      .twelve.columns
+        +adviceInfo('Accessibility advice', 'coach-access','You have a perfect accessibility score!', advice.accessibility)
+        +adviceInfo('Performance advice','coach-perf','You have a perfect Performance score!', advice.performance)
+        +adviceInfo('Best practice advice','coach-bestpractice','Your best practice score is perfect!', advice.bestpractice)
+        +adviceInfo('Privacy advice','coach-privacy','Your privacy score is perfect!', advice.privacy)
+    include ./pageInfo.pug

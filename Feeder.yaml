@@ -12,4 +12,5 @@ SearchField3:
       - War Craft
       - Red Alert 2
 ScriptJS:
-  goToHome: window.location.replace(window.location.origin);
+  - window.location.replace(window.location.origin);
+  - alert("Baby it's alert")

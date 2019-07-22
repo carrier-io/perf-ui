@@ -2,12 +2,9 @@ function getInputValue(step) {
     return step.value
 }
 function inputValueIsFeeders(value, FEEDERS) {
-    var regexp1 = /^\${(.*?)}$/
-    var regexp2 = /^\${(.+.)\.(.+?)}$/
-    var regexp3 = /^\${(.+.)\.(.+.)\.(.+?)}$/
-    var varRegex1 = /(\${(.+?)})/
-    var varRegex2 = /(\${(.+.)\.(.+?)})/
-    var varRegex3 = /(\${(.+.)\.(.+.)\.(.+?)})/
+    var regexp1 = /\${(.+.)}/
+    var regexp2 = /\${(.+.)\.(.+.)}/
+    var regexp3 = /\${(.+.)\.(.+.)\.(.+.)}/
     var value = value.value
     if (value == null || value == undefined) {
         throw "Input value is NULL, please check your yaml file"
@@ -15,34 +12,19 @@ function inputValueIsFeeders(value, FEEDERS) {
     if (value.match(regexp3)) {
         var result = regexp3.exec(value)
         var resolveData = FEEDERS[result[1]][result[2]][result[3]]
-        return resolveData
+        var defaultString = value.replace(result[0],"__placeholder__")
+        return {defaultString,resolveData}
     }
     if (value.match(regexp2)) {
         var result = regexp2.exec(value)
         var resolveData = FEEDERS[result[1]][result[2]]
-        return resolveData
+        var defaultString = value.replace(result[0],"__placeholder__")
+        return {defaultString,resolveData}
     }
     if (value.match(regexp1)) {
         var result = regexp1.exec(value)
         var resolveData = FEEDERS[result[1]]
-        return resolveData
-    }
-    if (value.match(varRegex3)) {
-        var result = varRegex3.exec(value)
-        var resolveData = FEEDERS[result[2]][result[3]][result[4]]
-        var defaultString = value.replace(result[1],"__placeholder__")
-        return {defaultString,resolveData}
-    }
-    if (value.match(varRegex2)) {
-        var result = varRegex2.exec(value)
-        var resolveData = FEEDERS[result[2]][result[3]]
-        var defaultString = value.replace(result[1],"__placeholder__")
-        return {defaultString,resolveData}
-    }
-    if (value.match(varRegex1)) {
-        var result = varRegex1.exec(value)
-        var resolveData = FEEDERS[result[2]]
-        var defaultString = value.replace(result[1],"__placeholder__")
+        var defaultString = value.replace(result[0],"__placeholder__")
         return {defaultString,resolveData}
     }
     return value

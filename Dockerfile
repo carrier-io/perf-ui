@@ -29,18 +29,21 @@ RUN apt-get -qqy update \
   fonts-tlwg-loma-otf \
   ttf-ubuntu-font-family \
   supervisor \
+  ffmpeg \
   && rm -rf /var/lib/apt/lists/* \
   && sed -i 's/securerandom\.source=file:\/dev\/random/securerandom\.source=file:\/dev\/urandom/' ./usr/lib/jvm/java-8-openjdk-amd64/jre/lib/security/java.security
 
-RUN wget -qO- https://deb.nodesource.com/setup_8.x | bash -
+RUN wget -qO- https://deb.nodesource.com/setup_10.x | bash -
 RUN apt-get install -y nodejs default-jre
 
-ADD chrome64_67.0.3396.79.deb /tmp/chrome64_67.0.3396.79.deb
-RUN cd /tmp && dpkg -i chrome64_67.0.3396.79.deb || apt-get -y -f install
-RUN cd /tmp && dpkg -i chrome64_67.0.3396.79.deb
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
+RUN sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+RUN apt-get update
+RUN apt-get install google-chrome-stable -y
 
 RUN mkdir -p /tmp/reports/screenshots
 RUN mkdir /tmp/reports/lighthouse_pages
+RUN mkdir /tmp/reports/frame
 RUN mkdir /tmp/tests
 
 COPY tests /tests

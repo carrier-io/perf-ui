@@ -74,11 +74,7 @@ Lighthouse.prototype.runLighthouse = async function (url, lighthouse_opts, confi
 
 Lighthouse.prototype.saveLighthouse = async function (data, pageName, simulation) {
     try {
-        await write(data, 'html', `/tmp/reports/lighthouse_pages/${pageName}.html`).then(() => {
-            var scores = getScores(data)
-            // var formData = configureFormData(scores, pageName)
-            // uploadLighthousePage(formData, simulation)
-        })
+        await write(data, 'html', `/tmp/reports/lighthouse_pages/${pageName}.html`)
         this.logger.info('Lighthouse Page data saved to: '+pageName+'.html');
     } catch (e) {
         this.logger.info("Lighthouse page didn't saved.")
@@ -90,7 +86,7 @@ Lighthouse.prototype.startLighthouse = async function (pageName, lighthouse_opts
     var outer_this = this;
     return await driver.getCurrentUrl()
         .then(url => outer_this.runLighthouse(url, lighthouse_opts).catch((err) => { this.logger.error(err) })
-        .then(results => outer_this.saveLighthouse(results, pageName, simulation)))
+        .then(results => outer_this.saveLighthouse(results.report, pageName, simulation)))
 }
 
 Lighthouse.prototype.startAnalyse = async function (pageName, lighthouse_opts, desktop, mobile, driver, simulation) {

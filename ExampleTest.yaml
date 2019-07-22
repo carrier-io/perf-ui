@@ -11,9 +11,9 @@
 #  rp_launch_tags:
 #    - Demo test
 #    - New features
-lighthouseDeviceEmulate:
- mobile: true
- desktop: true
+# lighthouseDeviceEmulate:
+#  mobile: true
+#  desktop: true
 
 FEEDER:
     $ref: /tmp/tests/Feeder.yaml
@@ -27,7 +27,7 @@ Demo:
         check:
             xpath: //span[contains(text(),'results')]
     AmazonAdvancedSearch:
-        url: https://www.amazon.com
+        url: https://www.amazon.com/
         steps:
             - input:
                 xpath: //input[@id='twotabsearchtextbox']
@@ -53,4 +53,4 @@ Demo:
     AmazonHome:
         steps:
             - executeJS: 
-                value: ${ScriptJS.goToHome}
+                value: ${ScriptJS}
