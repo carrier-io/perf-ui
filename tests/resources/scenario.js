@@ -213,7 +213,7 @@ ScenarioBuilder.prototype.ResultReport = async function (pageName, pageUrl, para
     var status
 
     await outer_this.reporter.runPageAudit(outer_this.driver,pageName,error)
-                        .then((status)=>{outer_this.consoleLogger.info(status)})
+                        .then((message)=>{outer_this.consoleLogger.info(message)})
                         .catch((err)=> { outer_this.consoleLogger.error(err.message); outer_this.consoleLogger.debug(err)})
 
     if (error) {
