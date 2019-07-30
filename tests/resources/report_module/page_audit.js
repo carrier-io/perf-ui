@@ -16,7 +16,7 @@ async function getPageScore(driver, pageName) {
 
 async function generateHTMLreport(pageScoreResult, pageName) {
     var html = pug.renderFile('/tests/template/index.pug', pageScoreResult)
-    await fs.writeFileSync('/tmp/reports/' + pageName + '.html', html)
+    await fs.writeFileSync('/tmp/reports/page_audit/' + pageName + '.html', html)
 }
 
 module.exports = {

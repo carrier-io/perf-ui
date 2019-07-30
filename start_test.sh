@@ -3,6 +3,7 @@
 mkdir -p /tmp/reports/screenshots
 mkdir -p /tmp/reports/lighthouse_pages
 mkdir -p /tmp/reports/frame
+mkdir -p /tmp/reports/page_audit
 
 sleep 10
 

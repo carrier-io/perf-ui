@@ -14,19 +14,7 @@
    limitations under the License.
 */
 
-fs = require('fs');
-cookie = require('cookie-parse');
 $RefParser = require('json-schema-ref-parser');
-
-
-function parseCookie(filepath) {
-    try {
-        var cookies_string = fs.readFileSync(filepath, 'utf8');
-        return cookie.parse(cookies_string.toString())
-    } catch (e) {
-        console.log(e);
-    }
-}
 
 async function resolveRef(filepath, logger) {
     try {
@@ -39,4 +27,4 @@ async function resolveRef(filepath, logger) {
     }
 }
 
-module.exports = { parseCookie, resolveRef };
+module.exports = { resolveRef };
