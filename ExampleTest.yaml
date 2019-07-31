@@ -11,9 +11,12 @@
 #  rp_launch_tags:
 #    - Demo test
 #    - New features
-lighthouseDeviceEmulate:
- mobile: true
- desktop: true
+# lighthouseDeviceEmulate:
+#  mobile: true
+#  desktop: true
+
+FEEDER:
+    $ref: /tmp/tests/Feeder.yaml
 
 Demo:
     AmazonSearchWithParameters:
@@ -24,15 +27,30 @@ Demo:
         check:
             xpath: //span[contains(text(),'results')]
     AmazonAdvancedSearch:
-        url: https://www.amazon.com
+        url: https://www.amazon.com/
         steps:
             - input:
                 xpath: //input[@id='twotabsearchtextbox']
-                value: mac book pr
+                value: new ${SearchField2.Notebook}
             - check:
-                xpath: //div[@id="issDiv4"]
+                xpath: //div[@id="issDiv0"]
             - click:
-                xpath: //div[@id="issDiv4"]
+                xpath: //div[@id="issDiv0"]
+            - input:
+                xpath: //input[@id='twotabsearchtextbox']
+                value: ${SearchField3.SearchData.LegendaryGame} pc
+            - check:
+                xpath: //div[@id="issDiv0"]
+            - click:
+                xpath: //div[@id="issDiv0"]
+            - input:
+                xpath: //input[@id='twotabsearchtextbox']
+                value: new ${SearchField} game
+            - check:
+                xpath: //div[@id="issDiv1"]
+            - click:
+                xpath: //div[@id="issDiv1"]
+    AmazonHome:
+        steps:
             - executeJS: 
-                value: window.location.replace(window.location.origin);
-            
+                value: ${ScriptJS}

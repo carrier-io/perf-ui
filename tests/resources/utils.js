@@ -14,9 +14,11 @@
    limitations under the License.
 */
 
+var fs = require('fs')
+
 module.exports = {
 
-    takeScreenshot: async function (driver, name,logger) {
+    takeScreenshot: async function (driver, name, logger) {
         return await driver.takeScreenshot().then(function (data) {
             name = `${name}.png` || 'ss.png';
             var path = '/tmp/reports/screenshots/';
@@ -24,8 +26,7 @@ module.exports = {
             try {
                 output = fs.appendFileSync(path + name, data, 'base64');
                 logger.info(`New Screenshot created: ${name}`)
-            }
-            catch(err){
+            } catch (err) {
                 logger.error(err);
             }
             return output;
@@ -56,19 +57,12 @@ module.exports = {
         return environment;
     },
 
-    setCookie: function(cookies, driver,logger) {
-        for (let cookie in cookies){
-            driver.manage().addCookie({name: cookie, value: cookies[cookie]})
-            logger.info('SET!!!')
-        }
-    },
-
-    parseURL: function(url) {
+    parseURL: function (url) {
 
         let match = url.split('?')[0].match(/^(?:https?:\/\/)(?:www\.)?(.*?)(\/.*)?$/);
         let domain = match[1];
         let path = match[2] ? match[2] : '';
-    
+
         return {
             'domain': domain,
             'path': path

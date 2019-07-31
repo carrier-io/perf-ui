@@ -34,6 +34,7 @@ function ReportPortal(config,logger) {
     }
     this.image_path = `/tmp/reports/screenshots/`;
     this.lh_path = `/tmp/reports/lighthouse_pages/`;
+    this.audit_path = `/tmp/reports/page_audit/`;
     this.logger = logger
 }
 
@@ -125,6 +126,7 @@ ReportPortal.prototype.reportIssue = async function (error, domain, url_path, pa
                     outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_desktop.html`, "text/xml", `Lighthouse result: ${lh_name}_desktop.html`)
                 }
             }
+            outer_this.sendTestLogWithFile(step, outer_this.audit_path, page_name+".html", "text/html", `Audit result: ${page_name}.html`)
         })
         .then(() => outer_this.sendTestLog(step, 'ERROR', error_id))
         .then(() => outer_this.sendTestLog(step, 'WARN', `Test error: ${error}`))
@@ -169,9 +171,9 @@ ReportPortal.prototype.reportResult = async function (page_name, url, path, driv
                     outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_desktop.html`, "text/xml", `Lighthouse result: ${lh_name}_desktop.html`)
                 }
             }
+            outer_this.sendTestLogWithFile(step, outer_this.audit_path, page_name+".html", "text/html", `Audit result: ${page_name}.html`)
         })
         .then(() => outer_this.finishItem(step.tempId, 'passed'))
-
 }
 
 module.exports = ReportPortal;

@@ -1,0 +1,16 @@
+SearchField:
+  - xbox
+  - ps4
+SearchField2:
+  Notebook:
+    - Mac Book
+    - Lenovo Think
+SearchField3:
+  SearchData:
+    LegendaryGame:
+      - StarCraft
+      - War Craft
+      - Red Alert 2
+ScriptJS:
+  - window.location.replace(window.location.origin);
+  - alert("Baby it's alert")

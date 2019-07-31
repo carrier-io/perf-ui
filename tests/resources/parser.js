@@ -14,29 +14,17 @@
    limitations under the License.
 */
 
-fs = require('fs');
-cookie = require('cookie-parse');
 $RefParser = require('json-schema-ref-parser');
 
-
-function parseCookie(filepath) {
+async function resolveRef(filepath, logger) {
     try {
-        var cookies_string = fs.readFileSync(filepath, 'utf8');
-        return cookie.parse(cookies_string.toString())
-    } catch (e) {
-        console.log(e);
-    }
-}
-
-async function resolveRef(filepath,logger) {
-    try{
-        var result = await $RefParser.dereference(filepath).catch((err)=>{console.log(err)})
+        var result = await $RefParser.dereference(filepath).catch((err) => { logger.error(err.message); logger.debug(err); process.exit() })
         logger.debug(JSON.stringify(result))
         return result
     }
-    catch(error){
+    catch (error) {
         logger.error(error)
     }
 }
 
-module.exports = { parseCookie, resolveRef };
+module.exports = { resolveRef };

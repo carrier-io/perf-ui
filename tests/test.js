@@ -56,6 +56,7 @@ async function run() {
     var resolved_scenario = await parser.resolveRef(path, logger)
     var influx_conf = resolved_scenario.influxdb || null
     var rp_conf = resolved_scenario.reportportal || null
+    var UserFeeders = resolved_scenario.FEEDER || null
     var scenario
 
     var rp;
@@ -73,7 +74,7 @@ async function run() {
     for (let test in env) {
         var testSteps = env[test]
         scenario = resolved_scenario[testSteps]
-        var ScenarioBuilder = new Scenario(testSteps, influx_conf, rp, lighthouseDeviceType, test_name, logger)
+        var ScenarioBuilder = new Scenario(testSteps, influx_conf, rp, lighthouseDeviceType, test_name, logger, UserFeeders)
         for (var j = 1; j <= times; j++) {
             if (scenario != null || scenario != undefined) {
                 logger.info(`Starting '${testSteps}' suite`)

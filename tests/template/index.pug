@@ -1,0 +1,348 @@
+mixin adviceInfo(name, id, perfectScore, node)
+  a(id=id)
+  h3 #{name} (#{node.score})
+  if node.score < 100
+    button.hidden-small.button.button--primary(onclick='toggleRow(this);') Show/hide details
+    .responsive
+      table
+        thead
+          tr
+            th Title
+            th Advice
+            th Score
+        tbody
+          each adviceName, idx in Object.getOwnPropertyNames(node.adviceList).filter(e => node.adviceList[e].score < 100)
+            - const advice = node.adviceList[adviceName]
+            tr(class=idx % 2 == 0 ? 'odd' : 'even')
+              td(data-title='Title') #{advice.title} (#{adviceName})
+              td.url(data-title='Advice') #{advice.advice}
+              td.number(data-title='Score') #{advice.score}
+            if (advice.offending.length > 0)
+              tr.u-hideable
+                td.url.offendingurl(colspan='3')
+                  ul
+                    each offender in advice.offending
+                      li #{offender}
+  else
+    p #{perfectScore}
+
+html
+  head 
+    meta( name='viewport',  content="width=device-width, initial-scale=1.0")
+    title Carrier | UI Performance Audit
+    link(rel="icon" href="https://getcarrier.io/favicon-32x32.png" sizes="32x32" type="image/png")
+    style
+      include index.css
+    script(type='text/javascript').
+      function toggleRow(toggleElement){
+        const rows = toggleElement.nextSibling.getElementsByClassName("u-hideable");
+        for (let i = 0; i < rows.length; ++i) {
+          const status = rows[i].currentStyle ? rows[i].currentStyle.display :
+                                  getComputedStyle(rows[i], null).display;
+          rows[i].style.display = (status === 'none') ? "table-row" : "none";
+        }
+      }
+    script(type='text/javascript').
+      function openFull(id){
+        var modal = document.getElementById("openFull"+"_"+id);
+        var img = document.getElementById("frame"+"_"+id);
+        var modalImg = document.getElementById("frameModal"+"_"+id);
+        var captionText = document.getElementById("caption"+"_"+id);
+        img.onclick = function(){
+          modal.style.display = "block";
+          modalImg.src = this.src;
+          captionText.innerHTML = img.alt;
+        }
+        var span = document.getElementsByClassName("close"+"_"+id)[0];
+        span.onclick = function() { 
+          modal.style.display = "none";
+        }
+      }
+    script(src="https://www.gstatic.com/charts/loader.js")
+    script(type="text/javascript").
+      google.charts.load('current', {'packages':['timeline']});
+      google.charts.setOnLoadCallback(function(){drawChart('!{ReportTiming}')});
+      function drawChart(time_data) {
+        var testData = JSON.parse(time_data)
+        var container = document.getElementById('timeLine');
+        var chart = new google.visualization.Timeline(container);
+        var dataTable = new google.visualization.DataTable();
+    
+        dataTable.addColumn({ type: 'string', id: 'Term' });
+        dataTable.addColumn({ type: 'string', id: 'Phase' });
+        dataTable.addColumn({ type: 'number', id: 'Start' });
+        dataTable.addColumn({ type: 'number', id: 'End' });
+        dataTable.addRows([
+          ['1', 'Total Time', testData.navigationStart, testData.loadEventEnd ],
+          ['2', 'Network', testData.navigationStart,  testData.fetchStart ],
+          ['3', 'Time To First Bite', testData.fetchStart,  testData.requestStart ],
+          ['4', 'Request', testData.requestStart,  testData.responseStart ],
+          ['5', 'Responce', testData.responseStart,  testData.responseEnd ],
+          ['6', 'Dom Processing', testData.domLoading,  testData.domComplete ],
+          ['7', 'Load Event', testData.loadEventStart,  testData.loadEventEnd ]]);
+          var options = {
+              timeline: { showRowLabels: false},
+              animation: {
+              startup: true,
+                duration: 1000,
+                easing: 'in'
+                },
+            avoidOverlappingGridLines: true,
+              backgroundColor: '#fff',
+              colors: ['#94499C', '#1072BA', '#F2E208', '#F08821','#65B345', '#514b43']
+            };
+          chart.draw(dataTable, options);
+          var e = document.getElementsByTagName('g') 
+          e[1].parentNode.removeChild(e[1])
+      }
+    script(type='text/javascript').
+      function createPopUp(data) {
+            var popUpBlock = document.getElementById('resPopUp');
+            popUpBlock.style.display = "block"
+            function grabDomain(string){
+              var regex = /http(?:s)?:\/\/(?:[\w-]+\.)*([\w-]{1,63})(?:\.(?:\w{3}|\w{2}))(?:$|\/)/
+              if (regex.test(string)){
+                return regex.exec(string)[0]
+              }
+              else {
+                return "can't extract domain"
+              }
+            }
+            document.getElementById('resName').children[1].innerHTML = data.name
+            document.getElementById('resDomain').children[1].innerHTML = grabDomain(data.name)
+            document.getElementById('resInitiator').children[1].innerHTML = data.initiatorType  
+            document.getElementById('resDuration').children[1].innerHTML = Math.floor(data.duration) + ' ms'
+            document.getElementById('resSize').children[1].innerHTML = (data.transferSize/1000) + ' kb'
+        }
+        function closeResPopUp() {
+            var e = document.getElementById('resPopUp');
+            e.style.display = "none"
+        }
+        function createLegendTable(data){
+          var e = document.getElementById('resourceLegend');
+          var content = "<div class='legend-table'>"
+          for (var [key, value] of data) {
+              content+= "<ul class='legend-row'><li class='legend-cell'>"+key+"</li><li class='legend-cell dot' style='background-color:"+value[0]+";'></li></ul>";
+          }
+          content+= "</div>";
+          e.innerHTML = content;
+        }
+        //- function drawDistribChart(chartData) {
+        //-   var preperedData = [['Initiator','Count']]
+        //-   var colorMap = []
+        //-   for (var [key, value] of chartData) {
+        //-       preperedData.push([key,value[1]])
+        //-       colorMap.push(value[0])
+        //-   }
+        //-   var data = google.visualization.arrayToDataTable(preperedData);
+        //-   var options = {
+        //-      title: 'Distribution resources by initiator',
+        //-      colors:colorMap
+        //-   };
+        //-   var chart = new google.visualization.PieChart(document.getElementById('pieChart'));
+        //-   chart.draw(data, options);
+        //- }
+    script(type='text/javascript').
+      setInterval(function() {
+        var elem = document.getElementsByClassName('google-visualization-tooltip-action');
+        var elem2 = document.getElementsByClassName('google-visualization-tooltip-item');
+        if (elem2[0]){
+        var replacedText = elem2[0].innerText;
+        var regex = /(\((\d+?ms)\))/;
+        var regex2 = /\s(\d+.\d+\sseconds)/
+          if (replacedText.match(regex)){
+            var result = regex.exec(replacedText)
+            replacedText = replacedText.replace(result[0],"");
+            elem2[0].firstChild.innerText = replacedText;
+            elem[1].lastElementChild.innerText = "  " + result[2]
+          }
+        }
+        if(elem.length == 2) {
+          elem[0].parentNode.removeChild(elem[0]);
+          
+        }
+        elem = null
+      }, 100);
+    script(type='text/javascript').
+      google.charts.setOnLoadCallback(function(){
+        drawChartRes('!{ReportResource}');
+      });
+      function drawChartRes(resourcesData) {
+        var dataVisualise = JSON.parse(resourcesData)
+        var container = document.getElementById('timeLine2');
+        var chart = new google.visualization.Timeline(container);
+        var dataTable = new google.visualization.DataTable();
+
+        function prepareData(data,colorMap){
+            var collection = []
+            for (const resources of data) {
+                collection.push( [resources.initiatorType ,resources.name.substring(0,40) + " ("+Math.floor(resources.duration)+"ms)", colorMap[resources.initiatorType] , resources.startTime, resources.responseEnd,])
+            }
+            return collection
+        }
+
+        var colorMap = {
+            css:"#afd899",
+            iframe:"#006cff",
+            img:"#bc9dd6",
+            script:"#e7bd8c",
+            link:"#89afe6",
+            swf:"#4db3ba",
+            font:"#e96859",
+            xmlhttprequest:"#e7d98c",
+            beacon:"#e1dcbe",
+            other:"#898779"
+        }
+
+        var preparedData = prepareData(dataVisualise,colorMap)
+        dataTable.addColumn({ type: 'string', id: 'Type' });
+        dataTable.addColumn({ type: 'string', id: 'Name' });
+        dataTable.addColumn({ type: 'string', role: 'style' });
+        dataTable.addColumn({ type: 'number', id: 'Start' });
+        dataTable.addColumn({ type: 'number', id: 'End' });
+        dataTable.addRows(preparedData);
+
+        var dataForLegend = new Map()
+        for (var i = 0; i < dataTable.getNumberOfRows(); i++) {
+            if(dataForLegend.has(dataTable.getValue(i, 0))){
+                var value = dataForLegend.get(dataTable.getValue(i, 0))
+                dataForLegend.set(dataTable.getValue(i, 0),[value[0],value[1]+ 1])
+            }
+            else{
+                dataForLegend.set(dataTable.getValue(i, 0),[colorMap[dataTable.getValue(i, 0)],1])
+            }
+        }
+        createLegendTable(dataForLegend)
+        //- google.charts.load('current', {'packages':['corechart']});
+        //- google.charts.setOnLoadCallback(function(){drawDistribChart(dataForLegend)});
+      
+        
+        var options = {
+          timeline: { 
+            showRowLabels: false,
+            colorByRowLabel: false,
+            groupByRowLabel: false,
+            showBarLabels: true
+          }
+        };
+
+        google.visualization.events.addListener(chart, 'select', function () {
+          selection = chart.getSelection();
+          if (selection.length > 0) {
+            var value = dataVisualise[selection[0].row]
+            createPopUp(value)
+          }
+        });
+        google.visualization.events.addListener(chart, 'onmouseover', function () {
+          var t = document.getElementsByTagName('g')
+          t[13].style.cursor = 'pointer'
+        });
+
+        chart.draw(dataTable, options);
+        var e = document.getElementsByTagName('g') 
+        e[7].parentNode.removeChild(e[7])
+      }
+      
+    - var trashHold = function(data){
+    -   if (data >= 90){
+    -     return "ok"
+    -   }
+    -   if (data< 90 && data >= 80){
+    -     return "warning"
+    -   }
+    -   if (data < 80){
+    -     return "error"
+    -   }
+    - }
+
+
+    - var checkStatus = function(data){
+    -   if (data == "Passed"){
+    -      return "ok"
+    -   }
+    -   if (data == "Failure"){
+    -      return "error"
+    -   }
+    - }
+
+  body
+    div( class='content')
+      h1 Carrier Perf-UI Audit
+      .row
+        .column
+          .row
+            .four.columns
+              a(href='https://getcarrier.io/#about')
+                img.u-max-full-width(src= 'https://avatars2.githubusercontent.com/u/45669065?s=200&v=4', alt='Carrier')
+                p.small
+              a(href='https://github.com/carrier-io/perf-ui') Perf UI
+              | &nbsp;audit helps you find performance problems on your web page.
+            .eight.columns
+              h4 Test status:&nbsp;
+                - testStatus = 'label normal ' + checkStatus(TestStatus)
+                span(class=testStatus) #{TestStatus}
+              - sLabel = 'label normal ' + trashHold(advice.score)
+              h3 Page total score:&nbsp;
+                  span(class=sLabel) #{advice.score}
+              ul
+                - pLabel = 'label normal ' + trashHold(advice.performance.score)
+                - prLabel = 'label normal ' + trashHold(advice.privacy.score)
+                - aLabel = 'label normal ' + trashHold(advice.accessibility.score)
+                - bLabel = 'label normal ' +  trashHold(advice.bestpractice.score)
+                li.group-item 
+                  a(href='#coach-perf') Performance score
+                  | &nbsp;
+                  span(class=pLabel) #{advice.performance.score}
+                li.group-item 
+                  a(href='#coach-privacy') Privacy score
+                  | &nbsp;
+                  span(class=prLabel) #{advice.privacy.score}  
+                li.group-item 
+                  a(href='#coach-access') Accessibility score
+                  | &nbsp;
+                  span(class=aLabel) #{advice.accessibility.score}
+                li.group-item 
+                  a(href='#coach-bestpractice') Best practice score
+                  | &nbsp;
+                  span(class=bLabel) #{advice.bestpractice.score}
+            h3 Page Load Timing
+            .time.colomn
+              div(id='frames_container')
+                each value,index in frameBase64Array
+                  div(id='divFrame')
+                    img(src='data:image/jpg;base64,'+value, alt="load frame" id='frame_'+index onclick='openFull('+index+')' class='frameImg')
+                    div(id='openFull_'+index ,class='modal', style='display:none')
+                      span(class='close_'+index id='close' ) &times;
+                      img(class='contentImg', id='frameModal_'+index)
+                      div(id='caption_'+index class='caption')
+                    div(id='frameFooter')
+              div(id='timeLine')
+            h3 Resource timing
+            div(id='timeLine2')
+            div(id='timeline3')
+              div(id='resourceLegend')
+            div(id='resPopUp' style='display:none')
+              span(id='closePopUp', onclick='closeResPopUp()') &times;
+              div(id='resPopUpBody')
+                div(class='tableDiv')
+                  ul(id='resDomain', class='tableRow')
+                    li(class='tableCell cellName') Domain:
+                    li(class='tableCell cellValue')
+                  ul(id='resInitiator', class='tableRow')
+                    li(class='tableCell cellName') Initiator:
+                    li(class='tableCell cellValue')
+                  ul(id='resDuration', class='tableRow')
+                    li(class='tableCell cellName') Duration:
+                    li(class='tableCell cellValue')
+                  ul(id='resSize', class='tableRow')
+                    li(class='tableCell cellName') Size:
+                    li(class='tableCell cellValue')
+                  ul(id='resName', class='tableRow')
+                    li(class='tableCell cellName') URL:
+                    li(class='tableCell cellValue')
+            .twelve.columns
+              +adviceInfo('Accessibility advice', 'coach-access','You have a perfect accessibility score!', advice.accessibility)
+              +adviceInfo('Performance advice','coach-perf','You have a perfect Performance score!', advice.performance)
+              +adviceInfo('Best practice advice','coach-bestpractice','Your best practice score is perfect!', advice.bestpractice)
+              +adviceInfo('Privacy advice','coach-privacy','Your privacy score is perfect!', advice.privacy)
+          include ./pageInfo.pug
