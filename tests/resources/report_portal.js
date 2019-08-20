@@ -119,10 +119,10 @@ ReportPortal.prototype.reportIssue = async function (error, domain, url_path, pa
         .then(() => {
             if (lh_opt != null || lh_opt != undefined) {
                 if (lh_opt.mobile) {
-                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_mobile.html`, "text/xml", `Lighthouse result: ${lh_name}_mobile.html`)
+                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_mobile.html`, "text/html", `Lighthouse result: ${lh_name}_mobile.html`)
                 }
                 if (lh_opt.desktop) {
-                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_desktop.html`, "text/xml", `Lighthouse result: ${lh_name}_desktop.html`)
+                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_desktop.html`, "text/html", `Lighthouse result: ${lh_name}_desktop.html`)
                 }
             }
         })
@@ -163,10 +163,10 @@ ReportPortal.prototype.reportResult = async function (page_name, url, path, driv
         .then(() => {
             if (lh_opt != null || lh_opt != undefined) {
                 if (lh_opt.mobile) {
-                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_mobile.html`, "text/xml", `Lighthouse result: ${lh_name}_mobile.html`)
+                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_mobile.html`, "text/html", `Lighthouse result: ${lh_name}_mobile.html`)
                 }
                 if (lh_opt.desktop) {
-                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_desktop.html`, "text/xml", `Lighthouse result: ${lh_name}_desktop.html`)
+                    outer_this.sendTestLogWithFile(step, outer_this.lh_path, `${lh_name}_desktop.html`, "text/html", `Lighthouse result: ${lh_name}_desktop.html`)
                 }
             }
         })
